@@ -96,7 +96,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: una cella è toccata se il suo quadrato **chiuso** `[x, x+1] × [y, y+1]` interseca il segmento (`SimVision.touched_cells`). Un segmento lungo un bordo tocca quindi le celle di entrambi i lati, e basta un muro su un lato a bloccare la vista. Un segmento che passa per uno spigolo tocca tutte e quattro le celle, come chiede il §5.2. Con unità al centro delle celle il caso del bordo non si presenta; può capitare durante il movimento (M3).
 - Alternative: contano solo le celle di cui il segmento attraversa l'interno, più la regola dello spigolo; un segmento lungo un bordo vedrebbe allora oltre un muro adiacente.
 - Cambia l'esito di una battaglia: sì (solo nel caso limite del bordo)
-- Stato: da confermare
+- Stato: confermata (umano, 2026-10-06: scelta a, niente colpi radenti oltre i muri)
 
 ### D-010 · Configurazione del pathfinding
 - Sezione GDD: §6.3
