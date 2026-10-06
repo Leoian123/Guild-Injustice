@@ -1,0 +1,37 @@
+[gd_resource type="Resource" script_class="RulesData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/sim/rules_data.gd" id="1_rules"]
+
+[resource]
+script = ExtResource("1_rules")
+tick_rate = 20
+retarget_ticks = 10
+leash_radius = 6.0
+relic_on_radius = 0.5
+relic_contest_radius = 1.5
+steal_ticks = 100
+time_limit_ticks = 6000
+corpse_ticks = 400
+reveals = 3
+reveal_radius = 6.0
+heart_vision_radius = 4.0
+wander_period_ticks = 20
+wander_radius = 3.0
+breed_period_ticks = 100
+breed_radius = 3.0
+newborn_cooldown_ticks = 100
+courage_radius = 3.0
+courage_min_allies = 2
+courage_bonus = 0.3
+flee_hp_ratio = 0.5
+flee_cooldown_ticks = 100
+point_blank_radius = 1.0
+point_blank_mult = 0.5
+backstab_mult = 4.0
+isolation_radius = 3.0
+armor_reduction = 5
+surround_count = 4
+surround_radius = 1.5
+reanimate_cooldown_ticks = 120
+reanimate_radius = 6.0
+rat_cap = 24
