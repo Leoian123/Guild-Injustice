@@ -89,3 +89,43 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: nessuna scena principale e avvio solo tramite script.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-009 · Supercover sui bordi delle celle
+- Sezione GDD: §5.2
+- Ambiguità: "tutte le celle toccate dal segmento" non dice se un segmento che corre esattamente lungo il bordo tra due celle (per esempio `x = 8.0`) tocca le celle di entrambi i lati. Il caso dello spigolo diagonale è esplicito e già coperto.
+- Scelta: una cella è toccata se il suo quadrato **chiuso** `[x, x+1] × [y, y+1]` interseca il segmento (`SimVision.touched_cells`). Un segmento lungo un bordo tocca quindi le celle di entrambi i lati, e basta un muro su un lato a bloccare la vista. Un segmento che passa per uno spigolo tocca tutte e quattro le celle, come chiede il §5.2. Con unità al centro delle celle il caso del bordo non si presenta; può capitare durante il movimento (M3).
+- Alternative: contano solo le celle di cui il segmento attraversa l'interno, più la regola dello spigolo; un segmento lungo un bordo vedrebbe allora oltre un muro adiacente.
+- Cambia l'esito di una battaglia: sì (solo nel caso limite del bordo)
+- Stato: da confermare
+
+### D-010 · Configurazione del pathfinding
+- Sezione GDD: §6.3
+- Ambiguità: dettagli di `AStarGrid2D`.
+- Scelta: `SimPathfinder` usa `DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES` (diagonale solo con le due ortogonali libere) e l'euristica `EUCLIDEAN` sia per il costo (1 e √2) sia per la stima (ammissibile, quindi percorsi di costo minimo), senza `jumping`. `find_path` restituisce le celle da partenza ad arrivo comprese, oppure un array vuoto se l'arrivo non è raggiungibile. Costo verificato su `temple_01`: cimitero `(8,33)` → reliquia 41,3137; piazzale `(35,30)` 16; esterno dell'ingresso est `(56,14)` 21.
+- Alternative: euristica `OCTILE` (stesso costo minimo).
+- Cambia l'esito di una battaglia: no (il costo minimo è fissato dal GDD; a parità di costo la scelta fra percorsi equivalenti è deterministica)
+- Stato: confermata
+
+### D-011 · `SimMap`
+- Sezione GDD: §4
+- Ambiguità: rappresentazione e celle fuori dalla griglia.
+- Scelta: muri in un `PackedByteArray`; le celle fuori dalla griglia contano come muro. `E` e `R` sono pavimento. Le celle `E` sono conservate per la vista. Il caricamento accetta LF e CRLF e rifiuta righe di lunghezza diversa, simboli sconosciuti e un numero di reliquie diverso da 1.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-012 · Vista della mappa e fixture dei test
+- Sezione GDD: §4
+- Ambiguità: dove stanno dimensione delle celle e colori; dove sta la mappa di test.
+- Scelta: `MapView` (`src/view/map_view.gd`) disegna rettangoli e un cerchio per la reliquia. I 16 px per cella sono impostati in `src/main.tscn`; i colori sono costanti di presentazione nella vista. Finestra 1024×640, cioè 64×40 celle. Mappa di test, ancore e `UnitData` minime dei test sono in `test/support/test_worlds.gd` (`TestWorlds`). Da M2 T00 usa la mappa di test.
+- Alternative: dimensione delle celle in `data/`.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-013 · Movimento lungo il percorso in M3
+- Sezione GDD: §6.3
+- Ambiguità: M2 si intitola "movimento", ma lo spostamento richiede velocità (`UnitData`), stati e bersagli, che arrivano in M3.
+- Scelta: M2 fornisce percorso e costo. Lo spostamento di `velocità / 20` celle per tick lungo il percorso si implementa nella fase 3 in M3.
+- Alternative: una funzione di avanzamento lungo il percorso senza ancora unità che la usino.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
