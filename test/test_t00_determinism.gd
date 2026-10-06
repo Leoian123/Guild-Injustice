@@ -28,6 +28,9 @@ func test_T00_determinism_with_combat() -> void:
 	assert_int(third.rng.state).is_not_equal(first.rng.state)
 	# The scenario must actually fight, or the check proves nothing.
 	assert_array(first.corpses).is_not_empty()
+	for unit: SimUnit in first.units:
+		if not unit.ai_enabled:
+			assert_int(unit.hp).override_failure_message("anchor %d was hit" % unit.id).is_equal(unit.max_hp)
 
 
 func _anchored_world(seed_value: int) -> World:
@@ -36,13 +39,14 @@ func _anchored_world(seed_value: int) -> World:
 	return world
 
 
+# Kept out of the anchors' reach: the anchors must survive.
 func _combat_world(seed_value: int) -> World:
 	var world := TestWorlds.world(seed_value)
-	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(14, 5), true)
-	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(14, 7), true)
-	TestWorlds.spawn(world, &"archer", SimUnit.Faction.PLAYER, Vector2i(17, 6), true)
-	TestWorlds.spawn(world, &"undead", SimUnit.Faction.ENEMY, Vector2i(4, 4), true)
-	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(4, 7), true)
-	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(3, 6), true)
+	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(13, 2), true)
+	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(13, 4), true)
+	TestWorlds.spawn(world, &"archer", SimUnit.Faction.PLAYER, Vector2i(16, 3), true)
+	TestWorlds.spawn(world, &"undead", SimUnit.Faction.ENEMY, Vector2i(4, 2), true)
+	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(4, 4), true)
+	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(3, 3), true)
 	TestWorlds.add_anchors(world)
 	return world
