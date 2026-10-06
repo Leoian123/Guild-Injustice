@@ -1,0 +1,5 @@
+.godot/
+*.log
+reports/raw/
+CLAUDE.local.md
+.claude/settings.local.json

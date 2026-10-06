@@ -1,0 +1,41 @@
+{
+  "name": "s2_paladino_al_cuore",
+  "description": "Un paladino sulla reliquia con due goblin di scorta. Tutto sul cuore.",
+  "reveals": [
+    [
+      35,
+      30
+    ],
+    [
+      58,
+      14
+    ],
+    [
+      8,
+      33
+    ]
+  ],
+  "units": [
+    {
+      "type": "paladin",
+      "cell": [
+        35,
+        15
+      ]
+    },
+    {
+      "type": "goblin",
+      "cell": [
+        34,
+        16
+      ]
+    },
+    {
+      "type": "goblin",
+      "cell": [
+        36,
+        16
+      ]
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+# Gilda Grigia — Regole di gioco, Fase 1 (v3)
+
+Fonte di verità delle regole. Milestone in `MILESTONES.md`, test in `TESTS.md`. I valori numerici sono quelli iniziali: da M4 comandano i file in `data/`.
+
+## 1. Scopo della fase
+Capire se schierare unità contro un nemico parzialmente visibile è divertente da rigiocare. Le domande a cui rispondere sono al §14.
+
+## 2. Ciclo di una battaglia
+1. **Ricognizione**: la mappa è coperta dalla nebbia. Il giocatore ha 3 rivelazioni (§5.1).
+2. **Schieramento**: il giocatore compra unità con il budget dello scenario e le piazza su celle calpestabili e visibili. Nessuna distanza minima dal nemico: l'imboscata è una tattica voluta.
+3. **Battaglia**: tutto automatico. Il giocatore può solo mettere in pausa e cambiare velocità (1×, 2×, 4×).
+4. **Risultato**: esito, motivo, unità perse, nemici uccisi, durata.
+
+## 3. Fine della battaglia
+Controllata nella fase 8 di ogni tick (§6.2), in quest'ordine:
+1. **Vittoria** se non resta nessuna unità nemica viva.
+2. **Sconfitta per annientamento** se non resta nessuna unità del giocatore viva (i ratti contano).
+3. **Sconfitta per furto** se il timer della reliquia arriva a `STEAL_TICKS`.
+   - Il timer aumenta di 1 nei tick in cui almeno un'unità nemica viva è entro `RELIC_ON_RADIUS` dal centro della reliquia **e** nessuna unità del giocatore viva è entro `RELIC_CONTEST_RADIUS`.
+   - In ogni altro tick torna a 0. Vale qualunque unità nemica, anche diversa da tick a tick.
+4. **Sconfitta per tempo** al tick `TIME_LIMIT_TICKS − 1`.
+
+## 4. Mappa `temple_01`
+File: `data/maps/temple_01.txt`, 64×40 celle, cella = 16 px. Anteprima: `docs/mappa_temple_01.png`.
+Legenda: `#` muro (non calpestabile, blocca la vista) · `.` pavimento · `E` ingresso (pavimento) · `R` reliquia (pavimento). Coordinate `(x, y)` con origine in alto a sinistra, `y` verso il basso. Il centro della cella `(x, y)` è il punto `(x + 0.5, y + 0.5)`.
+
+| Luogo | Area | Note |
+|---|---|---|
+| Reliquia | `(35,14)` | Centro del Cuore |
+| Cuore | x 31–40, y 10–18 | All'inizio è visibile solo la parte entro 4 celle dalla reliquia |
+| Sala sud | x 28–43, y 19–25 | Due pilastri; collega il Cuore all'ingresso principale |
+| Ingresso principale | y 26, x 33–38 | Largo 6 |
+| Corridoio est | y 13–14, x 41–53 | Largo 2, anticamera a x 46–50, y 11–16; ingresso est a x 53 |
+| Santuario | x 21–29, y 12–17 | Stanza senza uscite, unita al Cuore da un varco di 2 celle (x 30, y 14–15) e visibile dalla reliquia |
+| Cimitero | x 1–14, y 28–38 | Recinto con lapidi; uscite solo dal varco nord (x 8–9, y 27) e dal varco est (x 15, y 31–32) |
+| Piazzale e campo | resto della mappa | Rovine sparse che bloccano la vista |
+
+Percorsi A* fino alla reliquia: piazzale ~16 celle, esterno dell'ingresso est ~23, cimitero 37–47.
+
+## 5. Visione e distanze
+
+### 5.1 Nebbia e rivelazioni
+- All'inizio sono visibili le celle entro `HEART_VISION_RADIUS` dalla reliquia.
+- Ogni rivelazione rende visibili le celle entro `REVEAL_RADIUS` dal punto scelto. La nebbia ignora i muri: è informazione dall'alto.
+- Le celle rivelate restano visibili per tutto lo schieramento.
+- Le unità nemiche nella nebbia sono nascoste. Su piazzale, esterno dell'ingresso est e cimitero c'è un indicatore di minaccia generico, mostrato anche se la zona è vuota.
+- In battaglia la nebbia sparisce.
+
+### 5.2 Linea di vista
+- Due punti sono in vista se il segmento tra i due non attraversa celle muro. Algoritmo: supercover (tutte le celle toccate dal segmento).
+- Se il segmento passa esattamente per lo spigolo comune a due celle diagonali e almeno una delle due è muro, la vista è bloccata.
+- Serve linea di vista per notare un nemico, per qualunque attacco e per rianimare.
+
+### 5.3 Distanze
+Euclidee, in celle, tra le posizioni delle unità. Le posizioni sono continue.
+
+## 6. Simulazione
+
+### 6.1 Convenzioni
+- **Tick**: 20 al secondo, numerati da 0. Il tick 0 è il primo eseguito dopo "Via". Gli eventi "ogni N tick" avvengono ai tick multipli di N maggiori di 0.
+- **Secondi → tick**: `round(secondi × 20)`, minimo 1, calcolato al caricamento.
+- **ID**: interi crescenti a partire da 1, assegnati in quest'ordine: gruppo Blitz e poi Caccia nell'ordine dello scenario (§9), unità del giocatore nell'ordine della strategia, poi le unità create in battaglia nell'ordine in cui nascono. Un'unità rianimata riceve un nuovo ID.
+- **Numeri interi**: vita e danno sono interi. I moltiplicatori si applicano per primi, con arrotondamento per difetto; poi le riduzioni fisse; il danno finale è almeno 1.
+- **Età**: le unità schierate partono con età `NEWBORN_COOLDOWN_TICKS` (quindi subito idonee alla riproduzione); le unità nate in battaglia partono da 0.
+- **Ricariche**: ogni unità ha i propri timer. La ricarica dell'attacco scende di 1 a ogni tick e non si azzera cambiando bersaglio. All'inizio è a 0 (pronta).
+
+### 6.2 Pipeline del tick
+Fasi in ordine; in ogni fase le unità si processano per ID crescente.
+1. **Stati**: timer e ricariche scendono; entrate e uscite dalla fuga (§7, goblin).
+2. **Bersagli**: scelta o ricalcolo (§6.4).
+3. **Movimento**: le unità si spostano; l'orientamento di chi si muove diventa la direzione di movimento.
+4. **Attacchi**: si scatta una **fotografia** dello stato (posizioni, orientamenti, vita). Per ogni unità con ricarica a 0, bersaglio vivo, a portata e in vista, si calcola il danno usando solo la fotografia. Calcolati tutti i danni, gli attaccanti si girano verso il proprio bersaglio e la loro ricarica riparte.
+5. **Danni**: applicati tutti insieme. Due unità possono uccidersi a vicenda.
+6. **Morti**: le unità con vita ≤ 0 diventano `DEAD` e lasciano un cadavere (§6.7).
+7. **Abilità periodiche**: prima la rianimazione, poi la riproduzione dei ratti.
+8. **Fine battaglia**: §3.
+
+### 6.3 Movimento
+- AStarGrid2D, 8 direzioni, senza tagliare gli angoli (diagonale solo se le due celle ortogonali sono libere).
+- Nessuna collisione tra unità: possono sovrapporsi.
+- Velocità in celle al secondo, quindi `velocità / 20` celle per tick lungo il percorso.
+
+### 6.4 Ingaggio e bersaglio
+- Un'unità **nota** i nemici vivi entro il proprio raggio di ingaggio e in vista.
+- **Scelta**: il nemico notato più vicino; a parità, meno vita; poi ID più basso. Eccezione per il ladro (§7).
+- Un'unità **con bersaglio** lo ricalcola ogni `RETARGET_TICKS` tick dal proprio ultimo calcolo, oppure subito se il bersaglio muore o non è più notato. Un'unità **senza bersaglio** cerca a ogni tick.
+
+### 6.5 Attacco e orientamento
+- Si attacca se il bersaglio è entro il raggio d'attacco e in vista. Le unità con raggio > 1 attaccano a distanza.
+- **Orientamento iniziale**: unità del giocatore rivolte nella direzione opposta alla reliquia (sulla cella della reliquia, verso sud); unità nemiche rivolte verso la reliquia. Da ferma, un'unità mantiene l'ultimo orientamento.
+- **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
+
+### 6.6 Comportamento senza bersaglio
+- **Unità del giocatore** (tranne i ratti): tornano al punto di schieramento e lo tengono. Inseguono un bersaglio solo entro `LEASH_RADIUS` dal punto di schieramento: se per raggiungerlo dovrebbero uscirne, lo abbandonano e tornano.
+- **Unità nemiche**: avanzano verso la reliquia e combattono ciò che notano lungo la strada. Nessun limite di inseguimento.
+
+### 6.7 Morte e cadaveri
+- Un cadavere resta per `CORPSE_TICKS` tick nella posizione della morte.
+- Un'unità rianimata, quando muore, non lascia cadavere.
+
+## 7. Unità del giocatore
+Budget dello scenario: **2457**.
+
+| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Abilità |
+|---|---|---|---|---|---|---|---|---|---|
+| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | 3,0 | 4 | `WanderBehavior`, `BreedAbility` |
+| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | 2,5 | 5 | `PackCourageAbility` |
+| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | 1,8 | 7 | `PointBlankPenalty` |
+| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | 3,2 | 7 | `BackstabAbility` |
+| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | 1,2 | 4 | `ArmorAbility` |
+
+**Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e ignorano il limite di inseguimento.
+- *Vagabondaggio*: senza bersaglio, ogni `WANDER_PERIOD_TICKS` tick (dal proprio ultimo spostamento casuale) sceglie con l'RNG una cella calpestabile entro `WANDER_RADIUS` e ci va.
+- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce in una cella calpestabile scelta con l'RNG entro 1 cella dal punto medio della coppia.
+
+**Goblin, coraggio di gruppo.**
+- Con almeno `COURAGE_MIN_ALLIES` altri goblin entro `COURAGE_RADIUS`: danno × (1 + `COURAGE_BONUS`).
+- Entra in `FLEE` se non ha goblin alleati entro `COURAGE_RADIUS`, ha vita < `FLEE_HP_RATIO` del massimo e non è in ricarica di fuga. In fuga corre verso la reliquia e non attacca; può essere colpito.
+- Esce dalla fuga quando arriva entro 1 cella dalla reliquia, oppure quando ha di nuovo almeno `COURAGE_MIN_ALLIES` goblin entro `COURAGE_RADIUS`. All'uscita il punto di schieramento diventa la posizione attuale e non può rientrare in fuga per `FLEE_COOLDOWN_TICKS`.
+
+**Arciere, tiro ravvicinato.** Se un nemico qualsiasi è entro `POINT_BLANK_RADIUS`, il suo danno è × `POINT_BLANK_MULT`. Senza vista sul bersaglio si muove finché la ottiene.
+
+**Ladro, pugnalata.**
+- Colpo alle spalle: danno × `BACKSTAB_MULT`.
+- Bersaglio preferito: tra i nemici notati, quelli isolati (nessun loro alleato entro `ISOLATION_RADIUS`); fra questi il più vicino, poi meno vita, poi ID. Se nessuno è isolato, regola comune.
+- Si avvicina al punto 1 cella dietro al bersaglio (opposto al suo orientamento); se quel punto è muro, va diretto sul bersaglio.
+
+**Paladino, corazza.** Ogni colpo ricevuto è ridotto di `ARMOR_REDUCTION`. Se nella fotografia almeno `SURROUND_COUNT` nemici vivi sono entro `SURROUND_RADIUS`, la riduzione non si applica.
+
+## 8. Fazione nemica: Non morti del Necromante
+
+| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Abilità |
+|---|---|---|---|---|---|---|---|---|
+| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | 3,0 | 5 | `FearlessTrait` |
+| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | 1,5 | 4 | `FearlessTrait` |
+| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | 2,2 | 5 | `FearlessTrait` |
+| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | 1,3 | 6 | `FearlessTrait`, `ReanimateAbility` |
+
+**Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere entro `REANIMATE_RADIUS` e in vista, rianima il più vicino (a parità, ID più basso) e la ricarica riparte.
+- Il rianimato ha vita, danno, tempi, raggi e velocità dell'unità originale, sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
+- Si comporta come un'unità nemica: avanza verso la reliquia.
+
+**`FearlessTrait`**: l'unità non entra mai in `FLEE`.
+
+## 9. Scenario `temple_01`
+Prima della ricognizione l'RNG estrae la variante Blitz (A o B), poi la variante Caccia (A o B). Tutte le unità nemiche partono subito verso la reliquia.
+
+**Blitz**: 2 Revenant + 5 Servi.
+- **A, piazzale**: Revenant `(34,30)` `(37,30)`; Servi `(33,32)` `(35,32)` `(36,32)` `(38,32)` `(35,33)`.
+- **B, fianco est**: Revenant `(58,13)` `(58,15)`; Servi `(60,12)` `(60,14)` `(60,16)` `(61,13)` `(61,15)`.
+
+**Caccia**: 1 Necromante + 5 Non morti, sempre al cimitero.
+- **A, ventaglio**: Necromante `(8,33)`; Non morti `(4,30)` `(12,30)` `(3,34)` `(12,34)` `(8,37)`.
+- **B, colonna**: Necromante `(8,37)`; Non morti `(5,29)` `(11,29)` `(8,31)` `(4,33)` `(12,33)`.
+
+Le unità sono elencate nell'ordine di assegnazione degli ID.
+
+**Casualità**: solo scelta delle varianti, vagabondaggio dei ratti e cella di nascita dei ratti. Danni e bersagli sono deterministici.
+
+## 10. Costanti di regola (`data/rules.tres`)
+
+| Costante | Valore | | Costante | Valore |
+|---|---|---|---|---|
+| `TICK_RATE` | 20 | | `COURAGE_RADIUS` | 3,0 |
+| `RETARGET_TICKS` | 10 | | `COURAGE_MIN_ALLIES` | 2 |
+| `LEASH_RADIUS` | 6,0 | | `COURAGE_BONUS` | 0,3 |
+| `RELIC_ON_RADIUS` | 0,5 | | `FLEE_HP_RATIO` | 0,5 |
+| `RELIC_CONTEST_RADIUS` | 1,5 | | `FLEE_COOLDOWN_TICKS` | 100 |
+| `STEAL_TICKS` | 100 | | `POINT_BLANK_RADIUS` | 1,0 |
+| `TIME_LIMIT_TICKS` | 6000 | | `POINT_BLANK_MULT` | 0,5 |
+| `CORPSE_TICKS` | 400 | | `BACKSTAB_MULT` | 4 |
+| `REVEALS` | 3 | | `ISOLATION_RADIUS` | 3,0 |
+| `REVEAL_RADIUS` | 6,0 | | `ARMOR_REDUCTION` | 5 |
+| `HEART_VISION_RADIUS` | 4,0 | | `SURROUND_COUNT` | 4 |
+| `WANDER_PERIOD_TICKS` | 20 | | `SURROUND_RADIUS` | 1,5 |
+| `WANDER_RADIUS` | 3,0 | | `REANIMATE_COOLDOWN_TICKS` | 120 |
+| `BREED_PERIOD_TICKS` | 100 | | `REANIMATE_RADIUS` | 6,0 |
+| `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
+| `NEWBORN_COOLDOWN_TICKS` | 100 | | | |
+
+## 11. Contratto di `tools/sim.sh`
+Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cmdline_user_args()`).
+
+**Argomenti**: `--scenario <id>`, `--strategy <file.json>`, `--seed <n>` oppure `--seeds <da>-<a>`, `--out <file.jsonl>`.
+
+**Strategia**: `{ name, description, reveals: [[x,y],…], units: [{type, cell:[x,y]},…] }`. In alternativa `by_variant: { "A-A": {reveals, units}, "A-B": …, "B-A": …, "B-B": … }` (chiave = variante Blitz, trattino, variante Caccia): si usa la voce della combinazione estratta.
+
+**Validazione**: costo ≤ budget, al massimo `REVEALS` rivelazioni, ogni unità su cella calpestabile e visibile (§5.1). Se fallisce: codice di uscita 2 e motivo su stderr.
+
+**Uscita**: una riga JSON per battaglia nel file `--out` (JSON Lines). Su stdout solo un riepilogo leggibile, perché Godot vi scrive anche il proprio banner.
+```json
+{"scenario":"temple_01","strategy":"s1_sciame_e_lame","seed":42,
+ "variant":{"blitz":"A","hunt":"B"},"result":"win","reason":"enemies_dead",
+ "ticks":1234,"survivors":{"player":{"rat":12},"enemy":{}},
+ "events":[{"tick":87,"type":"death","unit":14,"detail":"undead"}],
+ "state_hash":"…"}
+```
+`reason`: `enemies_dead` · `player_dead` · `relic_stolen` · `timeout`. Tipi di evento: `death` · `reanimate` · `birth` · `flee_start` · `flee_end` · `relic_timer_reset`.
+
+Il riepilogo del batch riporta vittorie/partite in totale e per combinazione di varianti.
+
+## 12. `state_hash`
+SHA-256 (esadecimale) di un testo costruito così, una voce per riga:
+1. `tick=<n>`, `relic_timer=<n>`, `rng_state=<rng.state>`;
+2. per ogni unità, viva o morta, in ordine di ID: `id|type|faction|state|hp|x|y|fx|fy|target_id|attack_cd`;
+3. per ogni cadavere, in ordine di ID dell'unità: `corpse|id|type|x|y|ttl`.
+
+I float (posizioni `x y`, orientamento `fx fy`) sono scritti con 4 decimali; `target_id` è -1 se assente.
+
+## 13. Fuori perimetro
+Gestione della gilda, run e progressione, archetipi del capo, sistema completo di paura/disciplina/avidità (qui solo codardia dei goblin e ratti incontrollati), interventi del giocatore in battaglia, altre mappe o fazioni, grafica e audio definitivi, salvataggi, determinismo tra piattaforme.
+
+## 14. Domande della fase
+1. Le 3 rivelazioni creano una scelta interessante? Misura: vittorie di `s1i` meno vittorie di `s1`, per combinazione.
+2. Leggere la disposizione cambia lo schieramento? Misura: come sopra, separando le varianti Caccia A e B.
+3. Esiste più di una strategia vincente con 2457 monete?
+4. I ratti incontrollati sono un'arma o un rischio? Il necromante li punisce abbastanza?
+5. Guardare la battaglia è teso o noioso? (Solo collaudo umano.)

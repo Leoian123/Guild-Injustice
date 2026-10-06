@@ -1,0 +1,83 @@
+{
+  "name": "s1_sciame_e_lame",
+  "description": "Ratti nel cuore, tre ladri e un arciere a caccia del necromante al cimitero.",
+  "reveals": [
+    [
+      8,
+      33
+    ],
+    [
+      35,
+      30
+    ],
+    [
+      58,
+      14
+    ]
+  ],
+  "units": [
+    {
+      "type": "rat",
+      "cell": [
+        34,
+        13
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        36,
+        13
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        34,
+        15
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        36,
+        15
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        35,
+        12
+      ]
+    },
+    {
+      "type": "thief",
+      "cell": [
+        11,
+        31
+      ]
+    },
+    {
+      "type": "thief",
+      "cell": [
+        13,
+        33
+      ]
+    },
+    {
+      "type": "thief",
+      "cell": [
+        12,
+        36
+      ]
+    },
+    {
+      "type": "archer",
+      "cell": [
+        14,
+        33
+      ]
+    }
+  ]
+}

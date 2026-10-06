@@ -1,0 +1,314 @@
+{
+  "name": "s1i_sciame_informato",
+  "description": "Come s1, ma con uno schieramento per ogni combinazione di varianti (blitz-hunt). Misura il valore dell'informazione rispetto a s1.",
+  "by_variant": {
+    "A-A": {
+      "reveals": [
+        [
+          8,
+          33
+        ],
+        [
+          35,
+          25
+        ]
+      ],
+      "units": [
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            35,
+            12
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            11,
+            31
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            13,
+            33
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            12,
+            36
+          ]
+        },
+        {
+          "type": "archer",
+          "cell": [
+            35,
+            21
+          ]
+        }
+      ]
+    },
+    "A-B": {
+      "reveals": [
+        [
+          8,
+          35
+        ],
+        [
+          35,
+          25
+        ]
+      ],
+      "units": [
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            35,
+            12
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            11,
+            38
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            5,
+            38
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            13,
+            37
+          ]
+        },
+        {
+          "type": "archer",
+          "cell": [
+            35,
+            21
+          ]
+        }
+      ]
+    },
+    "B-A": {
+      "reveals": [
+        [
+          8,
+          33
+        ],
+        [
+          47,
+          14
+        ]
+      ],
+      "units": [
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            35,
+            12
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            11,
+            31
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            13,
+            33
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            12,
+            36
+          ]
+        },
+        {
+          "type": "archer",
+          "cell": [
+            45,
+            13
+          ]
+        }
+      ]
+    },
+    "B-B": {
+      "reveals": [
+        [
+          8,
+          35
+        ],
+        [
+          47,
+          14
+        ]
+      ],
+      "units": [
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            13
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            34,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            36,
+            15
+          ]
+        },
+        {
+          "type": "rat",
+          "cell": [
+            35,
+            12
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            11,
+            38
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            5,
+            38
+          ]
+        },
+        {
+          "type": "thief",
+          "cell": [
+            13,
+            37
+          ]
+        },
+        {
+          "type": "archer",
+          "cell": [
+            45,
+            13
+          ]
+        }
+      ]
+    }
+  }
+}

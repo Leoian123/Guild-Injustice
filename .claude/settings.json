@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash tools/check.sh)",
+      "Bash(bash tools/check.sh *)",
+      "Bash(bash tools/sim.sh *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ],
+    "ask": [
+      "Edit(/CLAUDE.md)",
+      "Edit(/.claude/**)",
+      "Edit(/docs/GDD_fase1.md)",
+      "Edit(/docs/TESTS.md)",
+      "Edit(/docs/MILESTONES.md)",
+      "Edit(/data/rules.tres)",
+      "Edit(/data/units/**)",
+      "Edit(/data/scenarios/**)"
+    ],
+    "deny": [
+      "Edit(/data/maps/**)",
+      "Edit(/tools/strategies/**)",
+      "Edit(/addons/**)",
+      "Edit(/.godot/**)"
+    ]
+  }
+}

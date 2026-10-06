@@ -1,0 +1,90 @@
+{
+  "name": "s3_tappo_ai_varchi",
+  "description": "Goblin e arcieri a chiudere la sala sud, un arciere e tre ratti a guardia del corridoio est.",
+  "reveals": [
+    [
+      35,
+      25
+    ],
+    [
+      51,
+      14
+    ],
+    [
+      8,
+      33
+    ]
+  ],
+  "units": [
+    {
+      "type": "goblin",
+      "cell": [
+        34,
+        23
+      ]
+    },
+    {
+      "type": "goblin",
+      "cell": [
+        35,
+        23
+      ]
+    },
+    {
+      "type": "goblin",
+      "cell": [
+        36,
+        23
+      ]
+    },
+    {
+      "type": "goblin",
+      "cell": [
+        37,
+        23
+      ]
+    },
+    {
+      "type": "archer",
+      "cell": [
+        33,
+        20
+      ]
+    },
+    {
+      "type": "archer",
+      "cell": [
+        38,
+        20
+      ]
+    },
+    {
+      "type": "archer",
+      "cell": [
+        47,
+        13
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        49,
+        12
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        49,
+        15
+      ]
+    },
+    {
+      "type": "rat",
+      "cell": [
+        50,
+        13
+      ]
+    }
+  ]
+}
