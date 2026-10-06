@@ -42,15 +42,37 @@ static func world(seed_value: int, extra_walls: Array[Vector2i] = []) -> World:
 
 ## Anchors: player paladin at (2,10) and enemy undead at (21,10), AI off.
 static func add_anchors(world_value: World) -> void:
-	var paladin := world_value.spawn_unit(unit_data(&"paladin", 400), SimUnit.Faction.PLAYER, SimMap.cell_center(Vector2i(2, 10)))
-	paladin.ai_enabled = false
-	var undead := world_value.spawn_unit(unit_data(&"undead", 80), SimUnit.Faction.ENEMY, SimMap.cell_center(Vector2i(21, 10)))
-	undead.ai_enabled = false
+	spawn(world_value, &"paladin", SimUnit.Faction.PLAYER, Vector2i(2, 10), false)
+	spawn(world_value, &"undead", SimUnit.Faction.ENEMY, Vector2i(21, 10), false)
 
 
-## Minimal UnitData built in the test until data/units exists (M4).
-static func unit_data(unit_type: StringName, max_hp: int) -> UnitData:
+## Unit "in (x,y)" = at the center of the cell (docs/TESTS.md).
+static func spawn(world_value: World, unit_type: StringName, faction: SimUnit.Faction, cell: Vector2i, ai_enabled: bool) -> SimUnit:
+	var unit := world_value.spawn_unit(unit_data(unit_type), faction, SimMap.cell_center(cell))
+	unit.ai_enabled = ai_enabled
+	return unit
+
+
+## Starting stats from GDD §7–§8, built in the test until data/units exists (M4).
+## Columns: cost, HP, damage, attack interval (s), attack range, speed, engage radius.
+const GDD_STATS: Dictionary = {
+	&"goblin": [254, 45, 7, 1.0, 1.0, 2.5, 5.0],
+	&"archer": [300, 35, 8, 1.5, 6.0, 1.8, 7.0],
+	&"paladin": [1900, 400, 25, 1.4, 1.0, 1.2, 4.0],
+	&"servant": [0, 30, 5, 1.0, 1.0, 3.0, 5.0],
+	&"undead": [0, 80, 8, 1.3, 1.0, 1.5, 4.0],
+}
+
+
+static func unit_data(unit_type: StringName) -> UnitData:
+	var stats: Array = GDD_STATS[unit_type]
 	var data := UnitData.new()
 	data.unit_type = unit_type
-	data.max_hp = max_hp
+	data.cost = stats[0]
+	data.max_hp = stats[1]
+	data.damage = stats[2]
+	data.attack_interval = stats[3]
+	data.attack_range = stats[4]
+	data.speed = stats[5]
+	data.engage_radius = stats[6]
 	return data
