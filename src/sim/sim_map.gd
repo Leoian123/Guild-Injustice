@@ -26,10 +26,10 @@ static func load_from_file(path: String) -> SimMap:
 
 ## Parses rows of the legend '#', '.', 'E', 'R'. Accepts LF and CRLF line endings.
 static func from_text(text: String) -> SimMap:
-	var rows: PackedStringArray = []
-	for line: String in text.replace("\r", "").split("\n"):
-		if not line.is_empty():
-			rows.append(line)
+	var rows: PackedStringArray = text.replace("\r", "").split("\n")
+	# Only trailing empty lines are allowed: an empty row inside would shift every y.
+	while not rows.is_empty() and rows[rows.size() - 1].is_empty():
+		rows.remove_at(rows.size() - 1)
 	if rows.is_empty():
 		push_error("SimMap: empty map")
 		return null
