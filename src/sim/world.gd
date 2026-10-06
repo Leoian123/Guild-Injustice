@@ -3,6 +3,8 @@ extends RefCounted
 ## Deterministic fixed-tick simulation (GDD §6.2, §12).
 
 var rules: RulesData
+var map: SimMap
+var pathfinder: SimPathfinder
 var rng: RandomNumberGenerator
 ## Index of the next tick to run. Ticks are numbered from 0 (GDD §6.1).
 var tick: int = 0
@@ -15,8 +17,10 @@ var corpses: Array[SimCorpse] = []
 var _next_id: int = 1
 
 
-func _init(p_rules: RulesData, p_seed: int) -> void:
+func _init(p_rules: RulesData, p_map: SimMap, p_seed: int) -> void:
 	rules = p_rules
+	map = p_map
+	pathfinder = SimPathfinder.new(map)
 	rng = RandomNumberGenerator.new()
 	rng.seed = p_seed
 
