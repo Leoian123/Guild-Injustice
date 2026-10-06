@@ -129,3 +129,59 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: una funzione di avanzamento lungo il percorso senza ancora unità che la usino.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-014 · Come si misura il limite di inseguimento
+- Sezione GDD: §6.6
+- Ambiguità: "inseguono un bersaglio solo entro `LEASH_RADIUS` dal punto di schieramento: se per raggiungerlo dovrebbero uscirne, lo abbandonano". Non è detto se "raggiungerlo" significa arrivare sul bersaglio o arrivare a portata d'attacco, né se la distanza è in linea d'aria o lungo il percorso.
+- Scelta: un'unità del giocatore può avere come bersaglio solo un nemico con `distanza(punto di schieramento, nemico) ≤ LEASH_RADIUS + raggio d'attacco`, in linea d'aria. Per il corpo a corpo il limite è 7, per l'arciere 12. Il controllo vale sia nella scelta sia in ogni tick successivo: se il bersaglio esce dal limite viene abbandonato subito, come uno non più notato. Senza bersaglio l'unità torna al punto di schieramento. I nemici non hanno limite. L'eccezione dei ratti arriva in M4.
+- Alternative: (a) il nemico stesso deve stare entro `LEASH_RADIUS` dal punto di schieramento (limite 6 per tutti, l'arciere non tira oltre); (b) come la scelta, ma con la distanza lungo il percorso A* invece che in linea d'aria (conta i muri, più costoso).
+- Cambia l'esito di una battaglia: sì
+- Stato: da confermare
+
+### D-015 · Quando un'unità smette di avvicinarsi al bersaglio
+- Sezione GDD: §6.3, §6.5
+- Ambiguità: il GDD dice di muoversi verso il bersaglio e di attaccare se è a portata e in vista, ma non se l'avvicinamento si ferma esattamente al raggio d'attacco a metà tick.
+- Scelta: nella fase 3, se il bersaglio è già a portata e in vista l'unità non si muove; altrimenti percorre tutto il passo del tick (`velocità / 20`). Può quindi finire fino a un passo più vicina del raggio d'attacco (al massimo 0,16 celle). Il percorso segue i centri delle celle di A* (partendo dalla cella della posizione attuale) e l'ultimo punto è la posizione esatta della destinazione. Viene ricalcolato a ogni tick. L'orientamento diventa la direzione dell'ultimo tratto percorso nel tick.
+- Alternative: fermarsi a metà tick appena si entra a portata (distanza finale = raggio d'attacco, salvo vista).
+- Cambia l'esito di una battaglia: sì (di poco: posizioni finali diverse fino a un passo)
+- Stato: da confermare
+
+### D-016 · Significato degli stati
+- Sezione GDD: §6.2
+- Ambiguità: il GDD elenca gli stati ma non quando si passa dall'uno all'altro, salvo `FLEE` e `DEAD`.
+- Scelta: con IA attiva, nella fase 3, `ATTACK` se il bersaglio è a portata e in vista (anche durante la ricarica), `MOVE` se l'unità si è mossa, altrimenti `IDLE`; l'unità che attacca nella fase 4 è in `ATTACK`; `DEAD` nella fase 6. Con IA spenta lo stato cambia solo in `DEAD` ("non cambia stato da sola"). `FLEE` arriva in M4. Lo stato oggi non decide nulla: entra nello `state_hash` e nella vista.
+- Alternative: `ATTACK` solo nel tick del colpo.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-017 · Modalità di test e campi di `SimUnit`
+- Sezione GDD: —; `docs/TESTS.md` "Modalità di test"
+- Ambiguità: valore di `target_id` con IA spenta; dove stanno le statistiche dei test.
+- Scelta: con IA spenta `target_id` vale `forced_target_id` se quell'unità è viva, altrimenti -1 (conta solo per lo `state_hash`). Una morta ha `target_id` -1 e conserva la vita ≤ 0. `SimUnit` copia da `UnitData` le statistiche e converte l'intervallo d'attacco in tick alla creazione (`UnitData.seconds_to_ticks`), senza scrivere sulla Resource. Le statistiche dei test (`TestWorlds.GDD_STATS`) sono trascritte dal GDD §7–§8 per `goblin`, `archer`, `undead`, più `servant` (serve a T02) e `paladin` (ancora), finché M4 non crea `data/units/`.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-018 · Durata e ordine dei cadaveri
+- Sezione GDD: §6.7, §12
+- Ambiguità: da quando conta `CORPSE_TICKS`.
+- Scelta: il cadavere nasce nella fase 6 con `ttl = CORPSE_TICKS`; nella fase 1 di ogni tick successivo `ttl` scende di 1 e a 0 il cadavere sparisce. Chi muore al tick t lascia un cadavere visibile dopo i tick da t a t + 399, cioè per 400 tick. I cadaveri restano ordinati per ID dell'unità anche se un ID minore muore dopo.
+- Alternative: cadavere ancora presente al tick t + 400.
+- Cambia l'esito di una battaglia: no (è la lettura diretta di "resta per `CORPSE_TICKS` tick"; la differenza di un tick nella finestra di rianimazione si verifica in M4 con T10–T11)
+- Stato: confermata
+
+### D-019 · Orientamento iniziale sulla cella della reliquia
+- Sezione GDD: §6.5
+- Ambiguità: un nemico al centro della reliquia non ha direzione "verso la reliquia".
+- Scelta: se l'unità è esattamente sul centro della reliquia guarda a sud `(0,1)`, qualunque sia la fazione. Nessuno scenario mette nemici lì.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-020 · Prestazioni
+- Sezione GDD: —
+- Ambiguità: il percorso ricalcolato a ogni tick potrebbe essere lento nei batch.
+- Scelta: ricalcolo a ogni tick, senza cache. Misura su `temple_01`: 6000 tick con 20 unità in circa 1,4 s. Se i batch di M6 saranno lenti, si aggiungerà una cache che dà gli stessi percorsi.
+- Alternative: cache del percorso per destinazione.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
