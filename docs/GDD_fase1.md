@@ -77,7 +77,10 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 
 ### 6.3 Movimento
 - AStarGrid2D, 8 direzioni, senza tagliare gli angoli (diagonale solo se le due celle ortogonali sono libere).
-- Nessuna collisione tra unità: possono sovrapporsi.
+- **Ingombro.** Ogni unità viva occupa la cella che contiene la sua posizione. Un'unità non può entrare in una cella occupata da un'unità **nemica** viva: il passo si ferma al bordo di quella cella. **Fra alleati non c'è ingombro**: si attraversano e possono stare nella stessa cella.
+- **Percorso.** A* considera come ostacoli, oltre ai muri, le celle occupate da nemici all'inizio della fase 3, salvo la cella di destinazione. Così chi si muove aggira i nemici che trova sulla strada. Se un percorso così non esiste, l'unità usa il percorso che ignora le unità e si ferma al primo nemico che la blocca.
+- **Razziatori.** Un'unità che senza bersaglio marcia verso la reliquia (oggi: ogni unità con `NecroBoundWill`) evita la mischia: cerca sempre prima il percorso che aggira i nemici. Se non esiste, il primo nemico che le sbarra il percorso diventa un bersaglio accettato, anche se la sua volontà non lo accetterebbe, e la strada se la apre combattendo.
+- **Difensori.** Le unità che tengono una posizione si mettono in mezzo e attaccano chi notano (§6.4, §6.8).
 - Velocità in celle al secondo, quindi `velocità / 20` celle per tick lungo il percorso.
 
 ### 6.4 Ingaggio e bersaglio
@@ -91,7 +94,7 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 - **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
 
 ### 6.6 Comportamento senza bersaglio
-- **Unità del giocatore** (tranne i ratti): tornano al punto di schieramento e lo tengono.
+- **Unità con `HoldGroundWill`: pattuglia.** Ai tick multipli di `PATROL_PERIOD_TICKS` ogni unità senza bersaglio sceglie con l'RNG, in ordine di ID, una cella calpestabile senza nemici il cui centro dista ≤ `PATROL_RADIUS` dal suo punto di schieramento (`GUARD_PATROL_RADIUS` per le guardie, §7), preferendo le celle senza alleati, e ci va. Prima della prima scelta, e dopo aver avuto un bersaglio, torna al punto di schieramento. La pattuglia è tarabile: oggi i valori sono costanti di regola; più avanti la taratura apparterrà alle entità grigie.
 - **Ratti**: vagano (§7).
 - **Unità nemiche**: avanzano verso la reliquia.
 - Quali bersagli un'unità accetta di inseguire lo decide la sua volontà (§6.8).
@@ -126,13 +129,23 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 ## 7. Unità del giocatore
 Budget dello scenario: **2457**.
 
-| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Volontà | Abilità |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | `HungerWill` | `WanderBehavior`, `BreedAbility` |
-| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | `HoldGroundWill` | `PackCourageAbility` |
-| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | `HoldGroundWill` | `PointBlankPenalty` |
-| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | `HoldGroundWill` | `BackstabAbility` |
-| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | `HoldGroundWill` | `ArmorAbility` |
+**Schieramento.** Più unità alleate possono stare nella stessa cella; nessuna unità del giocatore può essere schierata in una cella con un nemico visibile.
+
+**Guardia della reliquia.** Allo schieramento il giocatore può comprare un'unità **razionale** come **guardia**, pagando `ceil(costo × (1 + GUARD_COST_RATIO))`. "La reliquia è più importante della tua vita": la guardia
+- ha come punto di schieramento il centro della reliquia: ovunque la si schieri, il suo compito è tornarci, esplorando la mappa lungo la strada;
+- non insegue: accetta come bersaglio solo i nemici già entro il proprio raggio d'attacco;
+- non fugge mai;
+- pattuglia entro `GUARD_PATROL_RADIUS` dalla reliquia (§6.6).
+
+**Razionale** è un dato dell'unità: solo le unità razionali possono ricevere ordini, e in Fase 1 l'unico ordine è la guardia. Più avanti le entità grigie e i potenziamenti daranno ordini anche alle unità non razionali.
+
+| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Razionale | Volontà | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | sì | `HoldGroundWill` | `PackCourageAbility` |
+| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | `HoldGroundWill` | `PointBlankPenalty` |
+| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | sì | `HoldGroundWill` | `BackstabAbility` |
+| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | sì | `HoldGroundWill` | `ArmorAbility` |
 
 "Insegue" è `chase_radius`, in celle (§6.8).
 
@@ -157,17 +170,19 @@ Budget dello scenario: **2457**.
 
 ## 8. Fazione nemica: Non morti del Necromante
 
-| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Abilità |
-|---|---|---|---|---|---|---|---|---|---|
-| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | `melee` | 3,0 | 5 | `FearlessTrait` |
-| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | `melee` | 1,5 | 4 | `FearlessTrait` |
-| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | `melee` | 2,2 | 5 | `FearlessTrait` |
-| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | `ranged` | 1,3 | 6 | `FearlessTrait`, `ReanimateAbility` |
+| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Razionale | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | `melee` | 3,0 | 5 | no | `FearlessTrait` |
+| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | `melee` | 1,5 | 4 | no | `FearlessTrait` |
+| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | `melee` | 2,2 | 5 | no | `FearlessTrait` |
+| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | `ranged` | 1,3 | 6 | sì | `FearlessTrait`, `ReanimateAbility` |
 
 **Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere rianimabile (§6.7) entro `REANIMATE_RADIUS` e in vista, rianima quello con la **vita massima più alta**: per lui i servitori sono scudi di carne. A parità sceglie il più vicino, poi l'ID più basso. Poi la ricarica riparte. Vale per qualunque cadavere, anche dei propri servi.
 - **Il dardo.** Quando non rianima, il necromante attacca a distanza come le altre unità. Nella fase 4 di un tick in cui la rianimazione è pronta e c'è un cadavere rianimabile entro il raggio e in vista, non attacca: in quel tick rianima.
 - **Rianimazione a catena.** Il rianimato ha vita massima (e vita) pari a `floor(vita massima dell'unità morta × REANIMATE_HP_RATIO)`: metà della vita che aveva l'ultima volta. Esempio: paladino 400, poi 200, poi 100… Danno, tempi, raggi e velocità restano quelli dell'unità originale. Sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
 - Si comporta come un'unità nemica: avanza verso la reliquia.
+
+- **Cella occupata.** Se la cella del cadavere è occupata da un nemico del rianimato, il rianimato nasce al centro della prima cella calpestabile senza suoi nemici, cercando in anelli via via più ampi, in ordine di riga e colonna, senza RNG.
 
 **Volontà.** Ogni unità nemica ha `NecroBoundWill` (§6.8), compresi i rianimati: la volontà non è un'abilità, quindi il rianimato non la perde.
 
@@ -186,7 +201,7 @@ Prima della ricognizione l'RNG estrae la variante Blitz (A o B), poi la variante
 
 Le unità sono elencate nell'ordine di assegnazione degli ID.
 
-**Casualità**: solo scelta delle varianti, vagabondaggio dei ratti, cella di nascita dei ratti e dado della rianimabilità (§6.7, un tiro per ogni morte che lascia cadavere). Danni e bersagli sono deterministici.
+**Casualità**: solo scelta delle varianti, vagabondaggio dei ratti, cella di nascita dei ratti, cella di pattuglia (§6.6) e dado della rianimabilità (§6.7, un tiro per ogni morte che lascia cadavere). Danni e bersagli sono deterministici.
 
 ## 10. Costanti di regola (`data/rules.tres`)
 
@@ -208,7 +223,9 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `BREED_PERIOD_TICKS` | 100 | | `REANIMATE_RADIUS` | 6,0 |
 | `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
 | `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
-| `SWARM_RADIUS` | 3,0 | | | |
+| `SWARM_RADIUS` | 3,0 | | `GUARD_COST_RATIO` | 0,10 |
+| `PATROL_PERIOD_TICKS` | 60 | | `PATROL_RADIUS` | 2,0 |
+| `GUARD_PATROL_RADIUS` | 1,0 | | | |
 | `RAT_HUNGER_BITES` | 3 | | `RAT_DIGEST_TICKS` | 100 |
 | `REANIMATE_HP_RATIO` | 0,5 | | `REANIMATE_K_BASE` | 1,0 |
 
@@ -219,7 +236,9 @@ Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cm
 
 **Strategia**: `{ name, description, reveals: [[x,y],…], units: [{type, cell:[x,y]},…] }`. In alternativa `by_variant: { "A-A": {reveals, units}, "A-B": …, "B-A": …, "B-B": … }` (chiave = variante Blitz, trattino, variante Caccia): si usa la voce della combinazione estratta.
 
-**Validazione**: costo ≤ budget, al massimo `REVEALS` rivelazioni, ogni unità su cella calpestabile e visibile (§5.1). Se fallisce: codice di uscita 2 e motivo su stderr.
+Ogni unità della strategia può avere `"guard": true` (§7).
+
+**Validazione**: costo ≤ budget (sovrapprezzo delle guardie compreso), al massimo `REVEALS` rivelazioni, ogni unità su cella calpestabile e visibile (§5.1) e senza nemici, guardie solo per unità razionali. Se fallisce: codice di uscita 2 e motivo su stderr.
 
 **Uscita**: una riga JSON per battaglia nel file `--out` (JSON Lines). Su stdout solo un riepilogo leggibile, perché Godot vi scrive anche il proprio banner.
 ```json

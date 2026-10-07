@@ -15,4 +15,5 @@ speed = 1.8
 engage_radius = 7.0
 chase_radius = 4.0
 will = &"HoldGroundWill"
+rational = true
 abilities = Array[StringName]([&"PointBlankPenalty"])
