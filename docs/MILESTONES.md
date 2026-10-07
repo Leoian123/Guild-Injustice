@@ -26,6 +26,14 @@ Una milestone alla volta, con `/milestone M<n>`. Si chiude quando i test indicat
 - **Test**: T02, T03; T00 esteso a un mondo con unità che combattono.
 - **Chiusura**: test verdi.
 
+## M3.1 — Volontà di combattere
+- **Origine**: risposte dell'umano a D-014 e D-015. Il limite di inseguimento uguale per tutti diventa la volontà di ogni unità; le unità a distanza arretrano (kiting).
+- **Prerequisito**: l'umano approva `docs/PROPOSTA_M3.1.md`, eventualmente cambiando i numeri marcati (?). Poi l'agente porta i testi approvati in `docs/GDD_fase1.md` (§6.6, nuovo §6.8, §7, §8, §10, §13), `docs/TESTS.md` (T19–T23), `data/rules.tres` e `CLAUDE.md` (identificatori), e cancella la proposta.
+- **GDD**: §6.6, §6.8, §10.
+- **Lavoro**: componenti `HoldGroundWill`, `HungerWill`, `NecroBoundWill` (non sottoclassi di `SimUnit`); campo `chase_radius` in `UnitData`; arretramento delle unità a distanza nella fase 3; tolta la costante `LEASH_RADIUS`. Le unità in `data/units/`, il vagabondaggio dei ratti e le abilità restano in M4.
+- **Test**: T19–T23; T00, T02, T03 restano verdi.
+- **Chiusura**: test verdi.
+
 ## M4 — Unità e abilità
 - **GDD**: §7, §8, §10.
 - **Lavoro**: tutte le `UnitData` in `data/units/` con i valori iniziali; tutte le abilità come componenti.

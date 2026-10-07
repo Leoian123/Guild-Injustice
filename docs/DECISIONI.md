@@ -136,7 +136,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: un'unità del giocatore può avere come bersaglio solo un nemico con `distanza(punto di schieramento, nemico) ≤ LEASH_RADIUS + raggio d'attacco`, in linea d'aria. Per il corpo a corpo il limite è 7, per l'arciere 12. Il controllo vale sia nella scelta sia in ogni tick successivo: se il bersaglio esce dal limite viene abbandonato subito, come uno non più notato. Senza bersaglio l'unità torna al punto di schieramento. I nemici non hanno limite. L'eccezione dei ratti arriva in M4.
 - Alternative: (a) il nemico stesso deve stare entro `LEASH_RADIUS` dal punto di schieramento (limite 6 per tutti, l'arciere non tira oltre); (b) come la scelta, ma con la distanza lungo il percorso A* invece che in linea d'aria (conta i muri, più costoso).
 - Cambia l'esito di una battaglia: sì
-- Stato: da confermare
+- Stato: superata (umano, 2026-10-07: la volontà di inseguire dipende dall'unità — fame, influenza del necromante, coraggio; vedi M3.1 e docs/PROPOSTA_M3.1.md). Fino a M3.1 resta in vigore la scelta implementata.
 
 ### D-015 · Quando un'unità smette di avvicinarsi al bersaglio
 - Sezione GDD: §6.3, §6.5
@@ -144,7 +144,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: nella fase 3, se il bersaglio è già a portata e in vista l'unità non si muove; altrimenti percorre tutto il passo del tick (`velocità / 20`). Può quindi finire fino a un passo più vicina del raggio d'attacco (al massimo 0,16 celle). Il percorso segue i centri delle celle di A* (partendo dalla cella della posizione attuale) e l'ultimo punto è la posizione esatta della destinazione. Viene ricalcolato a ogni tick. L'orientamento diventa la direzione dell'ultimo tratto percorso nel tick.
 - Alternative: fermarsi a metà tick appena si entra a portata (distanza finale = raggio d'attacco, salvo vista).
 - Cambia l'esito di una battaglia: sì (di poco: posizioni finali diverse fino a un passo)
-- Stato: da confermare
+- Stato: superata (umano, 2026-10-07: il corpo a corpo ingaggia, le unità a distanza arretrano; vedi M3.1 e docs/PROPOSTA_M3.1.md). Il corpo a corpo resta come implementato.
 
 ### D-016 · Significato degli stati
 - Sezione GDD: §6.2
