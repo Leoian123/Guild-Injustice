@@ -31,12 +31,13 @@ func allows_kite_step(_world: World, unit: SimUnit, position: Vector2) -> bool:
 ## enemies within its patrol radius of its post, preferring cells without allies.
 static func run_patrols(world: World) -> void:
 	var period := world.rules.patrol_period_ticks
-	if world.tick == 0 or world.tick % period != 0:
+	if period <= 0 or world.tick == 0 or world.tick % period != 0:
 		return
 	for unit: SimUnit in world.units:
 		if not unit.is_alive() or not unit.ai_enabled or not unit.will is HoldGroundWill:
 			continue
-		if unit.target_id != SimUnit.NO_TARGET or unit.state == SimUnit.State.FLEE:
+		# "Every unit without a target" (GDD §6.6), fleeing ones included: the roll is taken anyway.
+		if unit.target_id != SimUnit.NO_TARGET:
 			continue
 		var radius := world.rules.guard_patrol_radius if unit.guard else world.rules.patrol_radius
 		var cells := _patrol_cells(world, unit, radius)

@@ -30,7 +30,7 @@ func on_has_target(_world: World, _unit: SimUnit) -> void:
 ## Phase 3, before anyone moves: the swarm vote, at ticks that are multiples of WANDER_PERIOD_TICKS (> 0).
 static func run_swarms(world: World) -> void:
 	var period := world.rules.wander_period_ticks
-	if world.tick == 0 or world.tick % period != 0:
+	if period <= 0 or world.tick == 0 or world.tick % period != 0:
 		return
 	var idle: Array[SimUnit] = []
 	for unit: SimUnit in world.units:

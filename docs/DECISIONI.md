@@ -337,7 +337,8 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - Il razziatore segna il bloccante in `SimUnit.blocker_id` (nell'hash). Il bloccante è accettato come bersaglio finché è vivo; quando il razziatore ritrova una via che aggira i nemici, il segno si azzera.
   - Il costo della guardia è arrotondato a 6 decimali prima di `ceil`, perché `1900 × 1,1` in virgola mobile vale `2090,0000000000002`.
   - Il rianimato in cella occupata cerca la prima cella libera ad anelli, in ordine di riga e colonna, senza RNG.
-  - Il passo all'indietro dell'arciere è rifiutato anche se entra in una cella nemica.
+  - Il passo all'indietro (§6.8) che entrerebbe in una cella nemica si ferma al bordo, come ogni passo (§6.3). Una prima versione lo rifiutava per intero: corretta dopo la revisione, perché cambiava l'esito (l'arciere restava più vicino a chi lo minaccia).
+  - Anche le unità in fuga senza bersaglio tirano la cella di pattuglia, come dice il §6.6 ("ogni unità senza bersaglio"): saltarle spostava la sequenza dell'RNG. La pattuglia non muove chi fugge, che continua a correre alla reliquia.
   - `SimScenario.create_world_with_variants` crea un mondo con una combinazione di varianti scelta, per strumenti e test.
   - `tools/screenshot.gd` accetta anche strategie fuori dal progetto (percorso assoluto) e rispetta `"guard"`.
 - Alternative: occupazione ricalcolata dopo ogni passo anche per i percorsi (più costosa).

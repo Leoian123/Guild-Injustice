@@ -7,7 +7,7 @@ Capire se schierare unità contro un nemico parzialmente visibile è divertente 
 
 ## 2. Ciclo di una battaglia
 1. **Ricognizione**: la mappa è coperta dalla nebbia. Il giocatore ha 3 rivelazioni (§5.1).
-2. **Schieramento**: il giocatore compra unità con il budget dello scenario e le piazza su celle calpestabili e visibili. Nessuna distanza minima dal nemico: l'imboscata è una tattica voluta.
+2. **Schieramento**: il giocatore compra unità con il budget dello scenario e le piazza su celle calpestabili e visibili, senza nemici (§7). Nessuna distanza minima dal nemico: l'imboscata è una tattica voluta. Un'unità razionale si può comprare come guardia della reliquia, con un sovrapprezzo (§7).
 3. **Battaglia**: tutto automatico. Il giocatore può solo mettere in pausa e cambiare velocità (1×, 2×, 4×).
 4. **Risultato**: esito, motivo, unità perse, nemici uccisi, durata.
 
@@ -151,7 +151,7 @@ Budget dello scenario: **2457**.
 
 **Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e inseguono finché hanno fame (§6.8).
 - *Vagabondaggio a sciame*: i ratti del giocatore con `WanderBehavior`, vivi e senza bersaglio (sazi compresi), formano sciami. Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Un ratto che ottiene un bersaglio abbandona la meta.
-- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Le celle servono solo a distribuire le nascite: per tutto il resto le unità non si bloccano (§6.3).
+- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Qui "libera" vale anche per gli alleati, per distribuire le nascite; per il resto valgono le regole d'ingombro del §6.3.
 
 **Goblin, coraggio di gruppo.**
 - Con almeno `COURAGE_MIN_ALLIES` altri goblin entro `COURAGE_RADIUS`: danno × (1 + `COURAGE_BONUS`).

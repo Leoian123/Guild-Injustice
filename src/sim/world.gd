@@ -268,6 +268,10 @@ func _phase_movement() -> void:
 			_move_towards(unit, map.relic_position())
 			continue
 		var target := get_unit(unit.target_id)
+		if target != null:
+			unit.will.on_has_target(self, unit)
+			for ability: SimAbility in unit.abilities:
+				ability.on_has_target(self, unit)
 		var threat := _kite_threat(unit)
 		if threat != null:
 			# Backing away replaces any other movement, even when the step is refused.
@@ -278,9 +282,6 @@ func _phase_movement() -> void:
 			continue
 		var destination: Variant = null
 		if target != null:
-			unit.will.on_has_target(self, unit)
-			for ability: SimAbility in unit.abilities:
-				ability.on_has_target(self, unit)
 			destination = _approach_point(unit, target)
 			if destination == null:
 				if _can_attack(unit, target.position):
@@ -349,7 +350,10 @@ func _kite_step(unit: SimUnit, threat: SimUnit) -> bool:
 	if map.is_wall(cell):
 		return false
 	if cell != Vector2i(unit.position.floor()) and is_enemy_cell(cell, unit.faction):
-		return false
+		# Enemies block: the step stops at the border of their cell (GDD §6.3).
+		position = _clip_to_cell(unit.position, position)
+		if position == unit.position:
+			return false
 	if not unit.will.allows_kite_step(self, unit, position) or not unit.will.allows_step(self, unit, position):
 		return false
 	unit.position = position
