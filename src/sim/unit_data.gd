@@ -2,6 +2,9 @@ class_name UnitData
 extends Resource
 ## Unit stats (GDD §7, §8). Shared and read-only at runtime: SimUnit copies from it.
 
+const MELEE: StringName = &"melee"
+const RANGED: StringName = &"ranged"
+
 @export var unit_type: StringName = &""
 @export var cost: int = 0
 @export var max_hp: int = 0
@@ -10,6 +13,8 @@ extends Resource
 @export var attack_interval: float = 0.0
 ## Cells.
 @export var attack_range: float = 0.0
+## Attack type (GDD §6.5), independent of the range: MELEE or RANGED.
+@export var attack_kind: StringName = MELEE
 ## Cells per second.
 @export var speed: float = 0.0
 ## Cells.

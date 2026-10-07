@@ -273,9 +273,9 @@ func _ability_idle_destination(unit: SimUnit) -> Variant:
 	return null
 
 
-# A ranged unit reloading backs away from the nearest living enemy within KITE_RADIUS (GDD §6.8).
+# A ranged unit (attack type, not range) reloading backs away from the nearest living enemy within KITE_RADIUS (GDD §6.8).
 func _kite_threat(unit: SimUnit) -> SimUnit:
-	if unit.attack_range <= 1.0 or unit.attack_cd == 0 or not unit.will.may_kite(self, unit):
+	if unit.attack_kind != UnitData.RANGED or unit.attack_cd == 0 or not unit.will.may_kite(self, unit):
 		return null
 	var nearest: SimUnit = null
 	var nearest_distance: float = 0.0

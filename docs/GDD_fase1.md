@@ -86,7 +86,7 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 - Un'unità **con bersaglio** lo ricalcola ogni `RETARGET_TICKS` tick dal proprio ultimo calcolo, oppure subito se il bersaglio muore o non è più notato. Un'unità **senza bersaglio** cerca a ogni tick.
 
 ### 6.5 Attacco e orientamento
-- Si attacca se il bersaglio è entro il raggio d'attacco e in vista. Le unità con raggio > 1 attaccano a distanza.
+- Si attacca se il bersaglio è entro il raggio d'attacco e in vista. Il **tipo d'attacco** è un dato dell'unità, indipendente dal raggio: `melee` (corpo a corpo) o `ranged` (a distanza). Un'unità con la lancia può avere raggio > 1 ed essere `melee`.
 - **Orientamento iniziale**: unità del giocatore rivolte nella direzione opposta alla reliquia (sulla cella della reliquia, verso sud); unità nemiche rivolte verso la reliquia. Da ferma, un'unità mantiene l'ultimo orientamento.
 - **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
 
@@ -119,20 +119,20 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 **Guinzaglio dell'influenza.** Nella fase 3 un'unità sotto influenza non fa un passo che la porterebbe oltre `NECRO_INFLUENCE_RADIUS` dal necromante vivo più vicino: se succederebbe, resta ferma in quel tick, mantenendo bersaglio e orientamento. Le unità si processano per ID crescente e il necromante ha un ID più basso dei suoi non morti, quindi si muove prima e i suoi non morti si regolano sulla sua nuova posizione. Il gruppo avanza compatto alla velocità del necromante. Il guinzaglio non trattiene chi è già fuori dall'influenza: resta senza mente finché non rientra nel raggio per conto suo.
 
 **Corpo a corpo e distanza (kiting).** Vale per tutte le unità, secondo il tipo di attacco:
-- **Corpo a corpo** (raggio d'attacco ≤ 1): ingaggia, cioè si avvicina al bersaglio finché è a portata e in vista (§6.3, §6.5).
-- **A distanza** (raggio d'attacco > 1): nella fase 3, se la ricarica dell'attacco è > 0 e c'è un nemico vivo entro `KITE_RADIUS`, l'unità arretra invece di muoversi altrimenti. Si sposta in linea retta, alla propria velocità, in direzione opposta al nemico vivo più vicino; a parità di distanza conta l'ID più basso. Il passo si annulla, e l'unità resta ferma, se la nuova posizione cade in una cella muro oppure, per un'unità con `HoldGroundWill`, se la porta oltre `chase_radius` dal punto di schieramento. Arretrando, l'orientamento diventa la direzione del movimento, quindi l'unità volta le spalle al nemico (§7, ladro).
+- **Corpo a corpo** (tipo `melee`): ingaggia, cioè si avvicina al bersaglio finché è a portata e in vista (§6.3, §6.5).
+- **A distanza** (tipo `ranged`): nella fase 3, se la ricarica dell'attacco è > 0 e c'è un nemico vivo entro `KITE_RADIUS`, l'unità arretra invece di muoversi altrimenti. Si sposta in linea retta, alla propria velocità, in direzione opposta al nemico vivo più vicino; a parità di distanza conta l'ID più basso. Il passo si annulla, e l'unità resta ferma, se la nuova posizione cade in una cella muro oppure, per un'unità con `HoldGroundWill`, se la porta oltre `chase_radius` dal punto di schieramento. Arretrando, l'orientamento diventa la direzione del movimento, quindi l'unità volta le spalle al nemico (§7, ladro).
 - **Eccezione del necromante**: arretra solo se non ha più non morti intorno, cioè nessun'altra unità viva con `NecroBoundWill` entro `NECRO_INFLUENCE_RADIUS`. Rianimati compresi. Finché il suo gruppo vive, tiene la posizione e lascia che siano i servi a proteggerlo.
 
 ## 7. Unità del giocatore
 Budget dello scenario: **2457**.
 
-| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Insegue | Volontà | Abilità |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | 3,0 | 4 | — | `HungerWill` | `WanderBehavior`, `BreedAbility` |
-| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | 2,5 | 5 | 6 | `HoldGroundWill` | `PackCourageAbility` |
-| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | 1,8 | 7 | 4 | `HoldGroundWill` | `PointBlankPenalty` |
-| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | 3,2 | 7 | 8 | `HoldGroundWill` | `BackstabAbility` |
-| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | 1,2 | 4 | 5 | `HoldGroundWill` | `ArmorAbility` |
+| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Volontà | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | `HoldGroundWill` | `PackCourageAbility` |
+| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | `HoldGroundWill` | `PointBlankPenalty` |
+| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | `HoldGroundWill` | `BackstabAbility` |
+| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | `HoldGroundWill` | `ArmorAbility` |
 
 "Insegue" è `chase_radius`, in celle (§6.8).
 
@@ -157,12 +157,12 @@ Budget dello scenario: **2457**.
 
 ## 8. Fazione nemica: Non morti del Necromante
 
-| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Abilità |
-|---|---|---|---|---|---|---|---|---|
-| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | 3,0 | 5 | `FearlessTrait` |
-| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | 1,5 | 4 | `FearlessTrait` |
-| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | 2,2 | 5 | `FearlessTrait` |
-| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | 1,3 | 6 | `FearlessTrait`, `ReanimateAbility` |
+| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Abilità |
+|---|---|---|---|---|---|---|---|---|---|
+| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | `melee` | 3,0 | 5 | `FearlessTrait` |
+| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | `melee` | 1,5 | 4 | `FearlessTrait` |
+| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | `melee` | 2,2 | 5 | `FearlessTrait` |
+| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | `ranged` | 1,3 | 6 | `FearlessTrait`, `ReanimateAbility` |
 
 **Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere rianimabile (§6.7) entro `REANIMATE_RADIUS` e in vista, rianima quello con la **vita massima più alta**: per lui i servitori sono scudi di carne. A parità sceglie il più vicino, poi l'ID più basso. Poi la ricarica riparte. Vale per qualunque cadavere, anche dei propri servi.
 - **Il dardo.** Quando non rianima, il necromante attacca a distanza come le altre unità. Nella fase 4 di un tick in cui la rianimazione è pronta e c'è un cadavere rianimabile entro il raggio e in vista, non attacca: in quel tick rianima.

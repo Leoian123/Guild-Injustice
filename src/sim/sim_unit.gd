@@ -21,6 +21,7 @@ var max_hp: int = 0
 var damage: int = 0
 var attack_interval_ticks: int = 0
 var attack_range: float = 0.0
+var attack_kind: StringName = UnitData.MELEE
 ## Cells per tick.
 var speed_per_tick: float = 0.0
 var engage_radius: float = 0.0
@@ -57,6 +58,7 @@ func _init(p_id: int, p_data: UnitData, p_faction: Faction, p_position: Vector2,
 	damage = p_data.damage
 	attack_interval_ticks = UnitData.seconds_to_ticks(p_data.attack_interval, tick_rate)
 	attack_range = p_data.attack_range
+	attack_kind = p_data.attack_kind
 	speed_per_tick = p_data.speed / tick_rate
 	engage_radius = p_data.engage_radius
 	chase_radius = p_data.chase_radius
