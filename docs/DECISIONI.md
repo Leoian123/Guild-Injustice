@@ -401,6 +401,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - I percorsi degli argomenti sono relativi alla radice del progetto; sono accettati anche percorsi assoluti.
   - Le chiavi della riga JSON seguono l'ordine del §11 (`JSON.stringify` senza ordinamento). `ticks` = tick eseguiti (`end_tick + 1`). `survivors` conta le unità vive per tipo e fazione, rianimati compresi fra i nemici. `events` è il registro del mondo.
   - Riepilogo su stdout: vittorie/partite in totale e per combinazione `A-A`, `A-B`, `B-A`, `B-B`.
+  - Oltre alle regole del §11, la validazione rifiuta con codice 2 un piano vuoto (anche quando una strategia `by_variant` non ha la voce della combinazione estratta) e una rivelazione fuori dalla mappa. Un file di strategia malformato (forma sbagliata di `reveals` o `units`) esce con codice 1 invece di bloccare il processo.
   - Prestazioni: indice dei necromanti, linea di vista senza elenchi intermedi, candidati della fase 2 ristretti ai nemici vivi elencati all'inizio della fase. Verifica: le impronte finali di 16 battaglie (4 strategie × 4 seed) sono identiche prima e dopo. Da 2,56 a 1,35 ms per tick.
 - Alternative: validare ogni seed solo al momento di eseguirlo (output parziale prima dell'errore).
 - Cambia l'esito di una battaglia: no

@@ -20,11 +20,41 @@ static func load_file(path: String) -> SimStrategy:
 	var strategy := SimStrategy.new()
 	strategy.strategy_name = data.get("name", path.get_file().get_basename())
 	strategy.description = data.get("description", "")
+	var sections: Array = []
 	if data.has("by_variant"):
+		if not data["by_variant"] is Dictionary:
+			push_error("SimStrategy: '%s' has a malformed by_variant" % path)
+			return null
 		strategy._by_variant = data["by_variant"]
+		sections = strategy._by_variant.values()
 	else:
 		strategy._plain = data
+		sections = [data]
+	for section: Variant in sections:
+		if not _is_well_formed(section):
+			push_error("SimStrategy: '%s' is malformed (reveals [[x,y],…], units [{type, cell:[x,y]},…])" % path)
+			return null
 	return strategy
+
+
+# Shape check only (GDD §11); the rules are checked by DeploymentPlan and SimRunner.
+static func _is_well_formed(section: Variant) -> bool:
+	if not section is Dictionary:
+		return false
+	var reveals: Variant = (section as Dictionary).get("reveals", [])
+	var units: Variant = (section as Dictionary).get("units", [])
+	if not reveals is Array or not units is Array:
+		return false
+	for pair: Variant in reveals:
+		if not pair is Array or (pair as Array).size() != 2:
+			return false
+	for unit: Variant in units:
+		if not unit is Dictionary or not (unit as Dictionary).get("type") is String:
+			return false
+		var cell: Variant = (unit as Dictionary).get("cell")
+		if not cell is Array or (cell as Array).size() != 2:
+			return false
+	return true
 
 
 ## Reveal cells for the rolled combination.
