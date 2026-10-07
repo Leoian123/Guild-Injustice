@@ -2,7 +2,7 @@
 
 Stato: **da approvare**. Quando l'umano la approva, i testi delle sezioni A–D entrano in `GDD_fase1.md`, `TESTS.md`, `data/` e `CLAUDE.md`, e questo file si cancella.
 
-Origine: risposte dell'umano a D-014 e D-015 (6–7 ottobre 2026). Nella versione finale il gioco deve simulare la "voglia" di combattere delle unità, in stile Darkest Dungeon e Mordheim. Il limite di inseguimento uguale per tutti è sostituito da un sistema unico, la **volontà**, con una causa diversa per ogni tipo di unità. La Fase 1 ne implementa la forma più semplice. Il sistema completo di paura e disciplina resta fuori perimetro, ma ogni nuova causa si aggiungerà come nuovo componente.
+Origine: risposte dell'umano a D-014 e D-015 (6–7 ottobre 2026), più due correzioni dalla revisione dell'umano (guinzaglio dell'influenza, contesa della reliquia). Nella versione finale il gioco deve simulare la "voglia" di combattere delle unità, in stile Darkest Dungeon e Mordheim. Il limite di inseguimento uguale per tutti è sostituito da un sistema unico, la **volontà**, con una causa diversa per ogni tipo di unità. La Fase 1 ne implementa la forma più semplice. Il sistema completo di paura e disciplina resta fuori perimetro, ma ogni nuova causa si aggiungerà come nuovo componente.
 
 I numeri marcati con **(?)** sono valori iniziali proposti: l'umano li conferma o li cambia.
 
@@ -23,11 +23,13 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 |---|---|---|
 | `HoldGroundWill` | `goblin` `archer` `thief` `paladin` | Nemici con `distanza(punto di schieramento, nemico) ≤ chase_radius + raggio d'attacco`, in linea d'aria. `chase_radius` è una statistica dell'unità (§7): il suo coraggio. |
 | `HungerWill` | `rat` del giocatore | Da affamato: qualunque nemico notato, senza limite. Da sazio: nessuno. |
-| `NecroBoundWill` | `servant` `undead` `revenant` `necromancer` e ogni rianimato | Entro `NECRO_INFLUENCE_RADIUS` da un `necromancer` vivo: qualunque nemico notato, senza limite (caccia). Fuori: solo i nemici già entro il proprio raggio d'attacco (senza mente: non deviano). |
+| `NecroBoundWill` | `servant` `undead` `revenant` `necromancer` e ogni rianimato | Entro `NECRO_INFLUENCE_RADIUS` da un `necromancer` vivo: qualunque nemico notato, senza limite (caccia). Fuori: solo i nemici già entro il proprio raggio d'attacco e quelli che contendono la reliquia, cioè entro `RELIC_CONTEST_RADIUS` dal suo centro (senza mente: non deviano, salvo per difendere il furto). |
 
 **Fame del ratto.** Ogni ratto parte affamato con `RAT_HUNGER_BITES` morsi. Ogni attacco messo a segno toglie un morso. Al morso che porta il conto a 0 il ratto diventa sazio per `RAT_DIGEST_TICKS` tick. Il timer scende nella fase 1; quando arriva a 0, nella stessa fase il ratto torna affamato con `RAT_HUNGER_BITES` morsi. Da sazio non ha bersaglio e vaga. Un ratto rianimato non ha fame: ha `NecroBoundWill`.
 
 **Influenza del necromante.** La distanza si misura dalla posizione dell'unità a quella del necromante vivo più vicino, senza bisogno di vista. Il necromante è sempre entro la propria influenza. Se tutti i necromanti muoiono, i non morti restano senza mente fino alla fine della battaglia. Con la volontà `FearlessTrait` non cambia: i non morti non fuggono mai.
+
+**Guinzaglio dell'influenza.** Nella fase 3 un'unità sotto influenza non fa un passo che la porterebbe oltre `NECRO_INFLUENCE_RADIUS` dal necromante vivo più vicino: se succederebbe, resta ferma in quel tick, mantenendo bersaglio e orientamento. Le unità si processano per ID crescente e il necromante ha un ID più basso dei suoi non morti, quindi si muove prima e i suoi non morti si regolano sulla sua nuova posizione. Il gruppo avanza compatto alla velocità del necromante. Il guinzaglio non trattiene chi è già fuori dall'influenza: resta senza mente finché non rientra nel raggio per conto suo.
 
 **Corpo a corpo e distanza (kiting).** Vale per tutte le unità, secondo il tipo di attacco:
 - **Corpo a corpo** (raggio d'attacco ≤ 1): ingaggia, cioè si avvicina al bersaglio finché è a portata e in vista (§6.3, §6.5).
@@ -68,6 +70,8 @@ Valori calcolati con le regole sopra e le statistiche del §7–§8. Da M4 l'arc
 | T21 | Mondo | Influenza del necromante (§6.8, `NecroBoundWill`) | `undead` con IA attiva in `(10,5)`, `goblin` con IA spenta in `(10,2)`, `necromancer` con IA spenta in `(8,5)` | Dopo il tick 0 il bersaglio dell'undead è il goblin. Dopo il tick 60 il goblin ha meno di 45 di vita |
 | T22 | Mondo | Senza mente (§6.8) | Come T21, senza necromante. Variante: con il necromante, a cui il test porta la vita a 0 prima del tick 0 | Senza necromante: dopo ogni tick da 0 a 60 l'undead non ha bersaglio. Nella variante lo stesso vale dal tick 1, perché il necromante muore nella fase 6 del tick 0, come in T10. In entrambi i casi, dopo il tick 60 il goblin ha 45 di vita e l'undead è più vicino alla reliquia che all'inizio |
 | T23 | Mondo | Kiting (§6.8) | `archer` con IA attiva in `(5,5)`, `servant` con IA spenta in `(6,6)` | Dopo il tick 0 il servo ha 22 di vita. Dopo il tick 7 la distanza fra i due è > 2,0 e l'arciere è orientato `(-0,7071, -0,7071)`. Dopo il tick 29 il servo ha ancora 22. Dopo il tick 30 ha 14 |
+| T24 | Mondo | Guinzaglio dell'influenza (§6.8) | `necromancer` con IA spenta in `(5,5)`, `undead` con IA attiva in `(12,5)`, a 7 celle | Dopo il tick 100 la distanza dell'undead dal necromante è ≤ 8,0 e la sua posizione è uguale a quella dopo il tick 99 |
+| T25 | Mondo | Senza mente e reliquia (§6.8, §3) | `servant` con IA attiva in `(18,6)`, senza necromante. `goblin` con IA spenta che il test mette nella posizione `(21.7, 6.5)`, a 1,2 celle dal centro della reliquia | Dopo il tick 0 il bersaglio del servo è il goblin. Dopo il tick 100 il goblin ha meno di 45 di vita |
 
 ---
 
@@ -81,7 +85,8 @@ Aggiungere la riga "Volontà: `HoldGroundWill` `HungerWill` `NecroBoundWill`."
 ---
 
 ## Effetti attesi sul gioco
-- **Blitz:** revenant e servi non hanno un necromante vicino, quindi sono senza mente e corrono alla reliquia colpendo solo ciò che hanno davanti. Fermarli è un problema di sbarramento.
-- **Caccia:** entro 8 celle dal necromante i non morti cacciano davvero. Uccidere il necromante li spegne (si collega a D-000).
+- **Blitz:** revenant e servi non hanno un necromante vicino, quindi sono senza mente e corrono alla reliquia colpendo solo ciò che hanno davanti o chi contende la reliquia. Le unità non si bloccano a vicenda, quindi "sbarrare" significa piazzarsi esattamente sul loro percorso: va osservato nel collaudo di M5, perché al giocatore potrebbe sembrare arbitrario.
+- **Caccia:** il gruppo avanza compatto alla velocità del necromante e caccia per tutta la battaglia. Uccidere il necromante spegne l'intero gruppo dove si trova: un premio per l'imboscata (si collega a D-000).
+- **Necromante:** è un'unità a distanza (raggio 5), quindi arretra dai nemici vicini voltando le spalle e diventa più esposto alla pugnalata. È la conseguenza diretta della regola "le unità a distanza arretrano"; per escluderlo serve una scelta esplicita dell'umano.
 - **Ratti:** mordono tre volte e poi si allontanano; sono un'arma a raffica, non un muro.
 - **Arcieri:** arretrano e voltano le spalle, quindi il ladro rianimato o un servo veloce li puniscono.

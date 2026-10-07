@@ -28,10 +28,10 @@ Una milestone alla volta, con `/milestone M<n>`. Si chiude quando i test indicat
 
 ## M3.1 — Volontà di combattere
 - **Origine**: risposte dell'umano a D-014 e D-015. Il limite di inseguimento uguale per tutti diventa la volontà di ogni unità; le unità a distanza arretrano (kiting).
-- **Prerequisito**: l'umano approva `docs/PROPOSTA_M3.1.md`, eventualmente cambiando i numeri marcati (?). Poi l'agente porta i testi approvati in `docs/GDD_fase1.md` (§6.6, nuovo §6.8, §7, §8, §10, §13), `docs/TESTS.md` (T19–T23), `data/rules.tres` e `CLAUDE.md` (identificatori), e cancella la proposta.
+- **Prerequisito**: l'umano approva `docs/PROPOSTA_M3.1.md`, eventualmente cambiando i numeri marcati (?). Poi l'agente porta i testi approvati in `docs/GDD_fase1.md` (§6.6, nuovo §6.8, §7, §8, §10, §13), `docs/TESTS.md` (T19–T25), `data/rules.tres` e `CLAUDE.md` (identificatori), e cancella la proposta.
 - **GDD**: §6.6, §6.8, §10.
-- **Lavoro**: componenti `HoldGroundWill`, `HungerWill`, `NecroBoundWill` (non sottoclassi di `SimUnit`); campo `chase_radius` in `UnitData`; arretramento delle unità a distanza nella fase 3; tolta la costante `LEASH_RADIUS`. Le unità in `data/units/`, il vagabondaggio dei ratti e le abilità restano in M4.
-- **Test**: T19–T23; T00, T02, T03 restano verdi.
+- **Lavoro**: componenti `HoldGroundWill`, `HungerWill`, `NecroBoundWill` (non sottoclassi di `SimUnit`), con il guinzaglio dell'influenza e la contesa della reliquia per i senza mente; campo `chase_radius` in `UnitData`; arretramento delle unità a distanza nella fase 3; tolta la costante `LEASH_RADIUS`. Le unità in `data/units/`, il vagabondaggio dei ratti e le abilità restano in M4.
+- **Test**: T19–T25; T00, T02, T03 restano verdi.
 - **Chiusura**: test verdi.
 
 ## M4 — Unità e abilità
@@ -45,6 +45,7 @@ Una milestone alla volta, con `/milestone M<n>`. Si chiude quando i test indicat
 - **Lavoro**: ricognizione con 3 rivelazioni e indicatori di minaccia; schieramento con budget e vincolo di visibilità; battaglia con pausa e velocità; schermata di risultato; debug (etichette stato/vita, griglia, rivela tutto, linee di vista del bersaglio). `tools/screenshot.gd`, eseguito senza `--headless`, salva un PNG di un frame per il controllo visivo dell'agente.
 - **Test**: nessun test di regola nuovo; `tools/check.sh` verde.
 - **Chiusura**: l'agente consegna istruzioni di collaudo (cosa provare, cosa aspettarsi) e uno screenshot per fase. **La milestone si chiude solo quando l'umano conferma** di aver giocato una partita completa con il mouse.
+- **Da osservare nel collaudo**: con il Blitz senza mente (M3.1), lo sbarramento richiede di piazzarsi esattamente sul percorso dei nemici. Va capito se al giocatore sembra arbitrario.
 
 ## M6 — Scenario e strumenti
 - **GDD**: §3, §9, §11.
