@@ -327,3 +327,27 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: rivelazione sull'angolo della cella; indicatori sempre visibili.
 - Cambia l'esito di una battaglia: no (la rivelazione centrata è la lettura confermata dalle strategie; il resto è interfaccia)
 - Stato: confermata
+
+### D-035 · Dettagli di implementazione dell'ingombro, della pattuglia e della guardia
+- Sezione GDD: §6.3, §6.6, §7, §8
+- Ambiguità: dettagli tecnici delle regole di M5.1.
+- Scelta:
+  - Le celle occupate per i percorsi si fotografano all'inizio della fase 3, una volta per fazione (`World._occupied`, fuori dall'hash perché ricalcolato a ogni tick). Il blocco del passo usa invece le posizioni correnti, quindi chi ha un ID più basso prende la cella per primo.
+  - Il passo tagliato si ferma a 0,001 dal bordo della cella nemica (margine di precisione), così la cella della posizione non cambia.
+  - Il razziatore segna il bloccante in `SimUnit.blocker_id` (nell'hash). Il bloccante è accettato come bersaglio finché è vivo; quando il razziatore ritrova una via che aggira i nemici, il segno si azzera.
+  - Il costo della guardia è arrotondato a 6 decimali prima di `ceil`, perché `1900 × 1,1` in virgola mobile vale `2090,0000000000002`.
+  - Il rianimato in cella occupata cerca la prima cella libera ad anelli, in ordine di riga e colonna, senza RNG.
+  - Il passo all'indietro dell'arciere è rifiutato anche se entra in una cella nemica.
+  - `SimScenario.create_world_with_variants` crea un mondo con una combinazione di varianti scelta, per strumenti e test.
+  - `tools/screenshot.gd` accetta anche strategie fuori dal progetto (percorso assoluto) e rispetta `"guard"`.
+- Alternative: occupazione ricalcolata dopo ogni passo anche per i percorsi (più costosa).
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-036 · T35 riscritto e T00 esteso senza goblin
+- Sezione GDD: §6.3, §6.8; `docs/TESTS.md` T35
+- Ambiguità: il T35 proposto prevedeva che un servo senza mente aggirasse un goblin isolato e lo superasse. Con portata 1 ogni giro intorno a un nemico passa nella cella accanto, a distanza 1, e il senza mente colpisce chi ha a portata (§6.8): si ferma a combattere. Il valore atteso era sbagliato, non la regola.
+- Scelta: T35 usa un muro con due varchi. Il goblin tappa quello vicino e il servo passa dall'altro senza toccarlo: è il caso che il GDD descrive come "aggirare". Nel T00 esteso i goblin sono sostituiti da paladino e ladro: un goblin ferito fugge verso la reliquia, da lì fissa il nuovo punto di schieramento e finisce accanto all'ancora nemica. È un comportamento corretto, ma rendeva lo scenario di prova inadatto.
+- Alternative: nessuna.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata

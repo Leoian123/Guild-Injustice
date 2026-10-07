@@ -37,6 +37,8 @@ func _run() -> void:
 		controller.end_recon()
 		for entry: Dictionary in strategy.plan_for(world.blitz_variant, world.hunt_variant).entries:
 			controller.select_type(entry["type"])
+			if controller.selected_guard != entry["guard"]:
+				controller.toggle_guard()
 			controller.place(entry["cell"])
 		if phase == "battle":
 			controller.start_battle()
@@ -68,6 +70,6 @@ func _parse(args: PackedStringArray) -> Dictionary:
 
 
 func _strategy_path(value: String) -> String:
-	if value.begins_with("res://"):
+	if value.begins_with("res://") or value.is_absolute_path():
 		return value
 	return "res://" + value
