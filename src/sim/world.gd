@@ -27,6 +27,10 @@ var corpses: Array[SimCorpse] = []
 var events: Array[Dictionary] = []
 
 var _next_id: int = 1
+## Cells occupied by living units of each faction at the start of phase 3, for paths (GDD §6.3).
+var _occupied: Array[Dictionary] = [{}, {}]
+## Whether the last _move_towards had to ignore enemy units to find a path.
+var _last_path_ignored_units: bool = false
 ## Damage per unit index, filled in phase 4 and applied in phase 5.
 var _pending_damage: PackedInt32Array = PackedInt32Array()
 
@@ -65,6 +69,9 @@ func reanimate(corpse: SimCorpse) -> SimUnit:
 	unit.abilities = abilities
 	unit.will = NecroBoundWill.new()
 	unit.reanimated = true
+	if is_enemy_cell(Vector2i(corpse.position.floor()), unit.faction):
+		unit.position = SimMap.cell_center(_first_cell_without_enemies(Vector2i(corpse.position.floor()), unit.faction))
+		unit.home = unit.position
 	_add_unit(unit)
 	corpses.erase(corpse)
 	log_event(&"reanimate", unit.id, unit.unit_type)
@@ -88,6 +95,33 @@ func _add_unit(unit: SimUnit) -> SimUnit:
 	units.append(unit)
 	unit.will.on_spawn(self, unit)
 	return unit
+
+
+## True if a living unit hostile to `faction` stands in `cell` right now (GDD §6.3).
+func is_enemy_cell(cell: Vector2i, faction: SimUnit.Faction) -> bool:
+	for unit: SimUnit in units:
+		if unit.is_alive() and unit.faction != faction and Vector2i(unit.position.floor()) == cell:
+			return true
+	return false
+
+
+## Cells occupied by enemies of `faction` at the start of phase 3.
+func enemy_cells(faction: SimUnit.Faction) -> Dictionary:
+	return _occupied[SimUnit.Faction.ENEMY if faction == SimUnit.Faction.PLAYER else SimUnit.Faction.PLAYER]
+
+
+# First walkable cell without enemies of `faction`, ring by ring around `center`, row by row.
+func _first_cell_without_enemies(center: Vector2i, faction: SimUnit.Faction) -> Vector2i:
+	var max_ring: int = maxi(map.width, map.height)
+	for ring: int in range(1, max_ring + 1):
+		for y: int in range(center.y - ring, center.y + ring + 1):
+			for x: int in range(center.x - ring, center.x + ring + 1):
+				if maxi(absi(x - center.x), absi(y - center.y)) != ring:
+					continue
+				var cell := Vector2i(x, y)
+				if map.is_walkable(cell) and not is_enemy_cell(cell, faction):
+					return cell
+	return center
 
 
 func log_event(type: StringName, unit_id: int, detail: StringName) -> void:
@@ -127,7 +161,8 @@ func state_hash() -> String:
 
 # Fixed inputs, data derived from them and the per-tick damage buffer are not state.
 func hash_excluded() -> PackedStringArray:
-	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage", "events"])
+	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage", "events",
+		"_occupied", "_last_path_ignored_units"])
 
 
 ## A unit notices living enemies within its engage radius and in sight (GDD §6.4).
@@ -176,6 +211,9 @@ func _phase_targets() -> void:
 		if unit.state == SimUnit.State.FLEE:
 			unit.target_id = SimUnit.NO_TARGET
 			continue
+		var blocker := get_unit(unit.blocker_id)
+		if blocker != null and not blocker.is_alive():
+			unit.blocker_id = SimUnit.NO_TARGET
 		if not unit.ai_enabled:
 			var forced := get_unit(unit.forced_target_id)
 			unit.target_id = forced.id if forced != null and forced.is_alive() else SimUnit.NO_TARGET
@@ -192,7 +230,9 @@ func _phase_targets() -> void:
 
 
 func _is_valid_target(unit: SimUnit, other: SimUnit) -> bool:
-	return notices(unit, other) and unit.will.accepts(self, unit, other)
+	if not notices(unit, other):
+		return false
+	return unit.will.accepts(self, unit, other) or other.id == unit.blocker_id
 
 
 # Abilities may prefer a target (thief); otherwise the nearest noticed enemy,
@@ -218,7 +258,9 @@ func _choose_target(unit: SimUnit) -> int:
 
 # Phase 3: movement along A* at speed / TICK_RATE cells per tick (GDD §6.3, §6.6, §6.8).
 func _phase_movement() -> void:
+	_snapshot_occupancy()
 	WanderBehavior.run_swarms(self)
+	HoldGroundWill.run_patrols(self)
 	for unit: SimUnit in units:
 		if not unit.is_alive() or not unit.ai_enabled:
 			continue
@@ -236,6 +278,7 @@ func _phase_movement() -> void:
 			continue
 		var destination: Variant = null
 		if target != null:
+			unit.will.on_has_target(self, unit)
 			for ability: SimAbility in unit.abilities:
 				ability.on_has_target(self, unit)
 			destination = _approach_point(unit, target)
@@ -248,7 +291,11 @@ func _phase_movement() -> void:
 			destination = unit.will.idle_destination(self, unit)
 			if destination == null:
 				destination = _ability_idle_destination(unit)
-		if destination != null and _move_towards(unit, destination):
+		var moved: bool = destination != null and _move_towards(unit, destination)
+		if target == null and destination != null and unit.will.is_raider():
+			# A raider with no way around the enemies opens one by fighting (GDD §6.3).
+			unit.blocker_id = _first_blocker(unit, destination) if _last_path_ignored_units else SimUnit.NO_TARGET
+		if moved:
 			unit.state = SimUnit.State.MOVE
 		elif target != null and _can_attack(unit, target.position):
 			unit.state = SimUnit.State.ATTACK
@@ -298,7 +345,10 @@ func _kite_step(unit: SimUnit, threat: SimUnit) -> bool:
 		return false
 	var heading := away.normalized()
 	var position := unit.position + heading * unit.speed_per_tick
-	if map.is_wall(Vector2i(position.floor())):
+	var cell := Vector2i(position.floor())
+	if map.is_wall(cell):
+		return false
+	if cell != Vector2i(unit.position.floor()) and is_enemy_cell(cell, unit.faction):
 		return false
 	if not unit.will.allows_kite_step(self, unit, position) or not unit.will.allows_step(self, unit, position):
 		return false
@@ -316,9 +366,10 @@ func _can_attack(unit: SimUnit, target_position: Vector2) -> bool:
 # Walks up to speed_per_tick along the path; the last waypoint is the exact destination.
 # The facing becomes the direction of the last segment walked. Returns true if the unit moved.
 func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
+	_last_path_ignored_units = false
 	if unit.position == destination:
 		return false
-	var path := pathfinder.find_path(Vector2i(unit.position.floor()), Vector2i(destination.floor()))
+	var path := _path_for(unit, destination)
 	if path.is_empty():
 		return false
 	var waypoints: Array[Vector2] = []
@@ -337,21 +388,72 @@ func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
 		if distance == 0.0:
 			continue
 		heading = (waypoint - position) / distance
-		if distance <= budget:
-			position = waypoint
-			budget -= distance
-		else:
-			position += heading * budget
-			budget = 0.0
+		var next := waypoint if distance <= budget else position + heading * budget
+		var next_cell := Vector2i(next.floor())
+		if next_cell != Vector2i(position.floor()) and is_enemy_cell(next_cell, unit.faction):
+			# Enemies block: stop at the border of their cell (GDD §6.3).
+			position = _clip_to_cell(position, next)
+			break
+		budget -= position.distance_to(next)
+		position = next
 		if budget <= 0.0:
 			break
-	if heading == Vector2.ZERO:
+	if heading == Vector2.ZERO or position == unit.position:
 		return false
 	if not unit.will.allows_step(self, unit, position):
 		return false
 	unit.position = position
 	unit.facing = heading
 	return true
+
+
+# A* around the cells held by enemies at the start of phase 3; if there is no such path,
+# the path that ignores units (GDD §6.3).
+func _path_for(unit: SimUnit, destination: Vector2) -> Array[Vector2i]:
+	var from := Vector2i(unit.position.floor())
+	var to := Vector2i(destination.floor())
+	var path := pathfinder.find_path_avoiding(from, to, enemy_cells(unit.faction))
+	if path.is_empty():
+		path = pathfinder.find_path(from, to)
+		_last_path_ignored_units = not path.is_empty()
+	return path
+
+
+# The lowest-ID enemy standing on the first enemy-held cell of the unit-blind path.
+func _first_blocker(unit: SimUnit, destination: Vector2) -> int:
+	var blocked := enemy_cells(unit.faction)
+	for cell: Vector2i in pathfinder.find_path(Vector2i(unit.position.floor()), Vector2i(destination.floor())):
+		if not blocked.has(cell):
+			continue
+		for other: SimUnit in units:
+			if other.is_alive() and unit.is_enemy_of(other) and Vector2i(other.position.floor()) == cell:
+				return other.id
+	return SimUnit.NO_TARGET
+
+
+## Last point of the segment from `from` towards `to` that stays inside the cell of `from`.
+## The margin keeps the position strictly inside, so its cell does not change.
+const CELL_BORDER_MARGIN: float = 0.001
+static func _clip_to_cell(from: Vector2, to: Vector2) -> Vector2:
+	var cell := from.floor()
+	var delta := to - from
+	var t: float = 1.0
+	if delta.x > 0.0:
+		t = minf(t, (cell.x + 1.0 - CELL_BORDER_MARGIN - from.x) / delta.x)
+	elif delta.x < 0.0:
+		t = minf(t, (cell.x + CELL_BORDER_MARGIN - from.x) / delta.x)
+	if delta.y > 0.0:
+		t = minf(t, (cell.y + 1.0 - CELL_BORDER_MARGIN - from.y) / delta.y)
+	elif delta.y < 0.0:
+		t = minf(t, (cell.y + CELL_BORDER_MARGIN - from.y) / delta.y)
+	return from + delta * maxf(t, 0.0)
+
+
+func _snapshot_occupancy() -> void:
+	_occupied = [{}, {}]
+	for unit: SimUnit in units:
+		if unit.is_alive():
+			_occupied[unit.faction][Vector2i(unit.position.floor())] = true
 
 
 # Phase 4: attacks computed from the snapshot (GDD §6.5).

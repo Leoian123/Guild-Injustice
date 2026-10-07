@@ -19,8 +19,9 @@ var fog: SimFog
 var plan: DeploymentPlan
 var phase: Phase = Phase.RECON
 var seed_value: int = 0
-## Unit type selected in the shop during deployment.
+## Unit type selected in the shop during deployment, and whether it is bought as a guard.
 var selected_type: StringName = &""
+var selected_guard: bool = false
 var paused: bool = false
 var speed: int = 1
 ## Last message for the player (invalid placement, …).
@@ -55,6 +56,7 @@ func start_game(new_seed: int) -> void:
 	plan = DeploymentPlan.new()
 	phase = Phase.RECON
 	selected_type = scenario.player_units[0]
+	selected_guard = false
 	paused = false
 	speed = SPEEDS[0]
 	message = ""
@@ -84,15 +86,22 @@ func end_recon() -> void:
 
 func select_type(unit_type: StringName) -> void:
 	selected_type = unit_type
+	if not SimScenario.unit_data(unit_type).rational:
+		selected_guard = false
+	changed.emit()
+
+
+func toggle_guard() -> void:
+	selected_guard = not selected_guard and SimScenario.unit_data(selected_type).rational
 	changed.emit()
 
 
 func place(cell: Vector2i) -> void:
 	if phase != Phase.DEPLOY:
 		return
-	var error := plan.placement_error(scenario, fog, selected_type, cell)
+	var error := plan.placement_error(scenario, fog, world, selected_type, cell, selected_guard)
 	if error.is_empty():
-		plan.add(selected_type, cell)
+		plan.add(selected_type, cell, selected_guard)
 		message = ""
 	else:
 		message = _placement_message(error)
@@ -241,4 +250,8 @@ func _placement_message(error: String) -> String:
 		return "Cella non calpestabile."
 	if error.ends_with("not visible"):
 		return "Puoi schierare solo su celle visibili."
+	if error.ends_with("has an enemy"):
+		return "In quella cella c'è un nemico."
+	if error.ends_with("cannot guard"):
+		return "Solo le unità razionali possono fare la guardia."
 	return error

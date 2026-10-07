@@ -20,7 +20,6 @@ func test_T15_variants() -> void:
 func test_reference_strategies_are_valid() -> void:
 	var scenario := SimScenario.load_scenario(&"temple_01")
 	var rules := SimScenario.load_rules()
-	var map := SimMap.load_from_file(scenario.map_path)
 	for file: String in DirAccess.get_files_at("res://tools/strategies"):
 		if not file.ends_with(".json"):
 			continue
@@ -28,7 +27,8 @@ func test_reference_strategies_are_valid() -> void:
 		assert_object(strategy).is_not_null()
 		for blitz: String in ["A", "B"]:
 			for hunt: String in ["A", "B"]:
-				var fog := SimFog.new(map, rules)
+				var world := SimScenario.create_world_with_variants(scenario, rules, blitz, hunt)
+				var fog := SimFog.new(world.map, rules)
 				var reveals := strategy.reveals_for(blitz, hunt)
 				assert_int(reveals.size()).override_failure_message("%s %s-%s: too many reveals" % [file, blitz, hunt]) \
 					.is_less_equal(rules.reveals)
@@ -36,6 +36,7 @@ func test_reference_strategies_are_valid() -> void:
 					fog.reveal(cell)
 				var plan := strategy.plan_for(blitz, hunt)
 				assert_array(plan.entries).override_failure_message("%s %s-%s: no units" % [file, blitz, hunt]).is_not_empty()
-				assert_str(plan.validation_error(scenario, fog)) \
-					.override_failure_message("%s %s-%s: %s" % [file, blitz, hunt, plan.validation_error(scenario, fog)]) \
+				var error := plan.validation_error(scenario, fog, world)
+				assert_str(error) \
+					.override_failure_message("%s %s-%s: %s" % [file, blitz, hunt, error]) \
 					.is_empty()

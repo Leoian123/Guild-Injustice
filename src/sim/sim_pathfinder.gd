@@ -32,6 +32,21 @@ func find_path(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
 	return path
 
 
+## Like find_path, with the cells in `blocked` treated as walls, except `from` and `to`
+## (GDD §6.3: paths go around enemy units). `blocked` maps Vector2i cells to true.
+func find_path_avoiding(from: Vector2i, to: Vector2i, blocked: Dictionary) -> Array[Vector2i]:
+	var toggled: Array[Vector2i] = []
+	for cell: Vector2i in blocked:
+		if cell == from or cell == to or not _astar.is_in_boundsv(cell) or _astar.is_point_solid(cell):
+			continue
+		_astar.set_point_solid(cell, true)
+		toggled.append(cell)
+	var path := find_path(from, to)
+	for cell: Vector2i in toggled:
+		_astar.set_point_solid(cell, false)
+	return path
+
+
 ## Sum of step lengths: 1 for orthogonal steps, √2 for diagonal ones.
 static func path_cost(path: Array[Vector2i]) -> float:
 	var cost: float = 0.0

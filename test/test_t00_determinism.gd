@@ -39,12 +39,13 @@ func _anchored_world(seed_value: int) -> World:
 	return world
 
 
-# Kept out of the anchors' reach: the anchors must survive.
+# Kept out of the anchors' reach, patrols included: the anchors must survive.
 func _combat_world(seed_value: int) -> World:
 	var world := TestWorlds.world(seed_value)
-	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(13, 2), true)
-	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(13, 4), true)
-	TestWorlds.spawn(world, &"archer", SimUnit.Faction.PLAYER, Vector2i(16, 3), true)
+	# No goblins: a fleeing goblin runs to the relic and would end up next to an anchor.
+	TestWorlds.spawn(world, &"paladin", SimUnit.Faction.PLAYER, Vector2i(10, 3), true)
+	TestWorlds.spawn(world, &"thief", SimUnit.Faction.PLAYER, Vector2i(10, 5), true)
+	TestWorlds.spawn(world, &"archer", SimUnit.Faction.PLAYER, Vector2i(12, 3), true)
 	TestWorlds.spawn(world, &"undead", SimUnit.Faction.ENEMY, Vector2i(4, 2), true)
 	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(4, 4), true)
 	TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(3, 3), true)

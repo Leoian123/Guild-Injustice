@@ -26,6 +26,7 @@ var _battle_box: VBoxContainer
 var _result_box: VBoxContainer
 var _result_text: Label
 var _shop_buttons: Dictionary = {}
+var _guard_check: CheckButton
 var _pause_button: Button
 var _speed_buttons: Dictionary = {}
 var _debug_checks: Dictionary = {}
@@ -77,6 +78,11 @@ func _build() -> void:
 			_controller.select_type.bind(unit_type))
 		button.toggle_mode = true
 		_shop_buttons[unit_type] = button
+	_guard_check = CheckButton.new()
+	_guard_check.text = "Guardia (+%d%%)" % roundi(_controller.rules.guard_cost_ratio * 100.0)
+	_guard_check.focus_mode = Control.FOCUS_NONE
+	_guard_check.pressed.connect(_controller.toggle_guard)
+	_deploy_box.add_child(_guard_check)
 	_add_button(_deploy_box, "Via!", _controller.start_battle)
 
 	_battle_box = VBoxContainer.new()
@@ -127,9 +133,11 @@ func _refresh() -> void:
 		GameController.Phase.DEPLOY:
 			_title.text = "Schieramento"
 			_info.text = "Seed %d\nBudget rimasto: %d su %d\nClic sinistro: piazza. Clic destro: rimuovi.\nSolo celle visibili." \
-				% [c.seed_value, c.scenario.budget - c.plan.cost(), c.scenario.budget]
+				% [c.seed_value, c.scenario.budget - c.plan.cost(c.rules), c.scenario.budget]
 			for unit_type: StringName in _shop_buttons:
 				(_shop_buttons[unit_type] as Button).set_pressed_no_signal(unit_type == c.selected_type)
+			_guard_check.set_pressed_no_signal(c.selected_guard)
+			_guard_check.disabled = not SimScenario.unit_data(c.selected_type).rational
 		GameController.Phase.BATTLE:
 			_title.text = "Battaglia"
 			_info.text = "Seed %d\nTempo: %.1f s\nTimer reliquia: %d / %d\nSpazio: pausa." \

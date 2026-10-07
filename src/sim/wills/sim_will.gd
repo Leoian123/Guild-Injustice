@@ -38,6 +38,17 @@ func idle_destination(_world: World, _unit: SimUnit) -> Variant:
 	return null
 
 
+## Phase 3: called for a unit that has a target, before it moves.
+func on_has_target(_world: World, _unit: SimUnit) -> void:
+	pass
+
+
+## Phase 3: raiders march on the relic and avoid fights; when no path goes around the
+## enemies, the first blocking enemy becomes an accepted target (GDD §6.3).
+func is_raider() -> bool:
+	return false
+
+
 ## Phase 3: whether any step may end at `position` (influence leash).
 func allows_step(_world: World, _unit: SimUnit, _position: Vector2) -> bool:
 	return true

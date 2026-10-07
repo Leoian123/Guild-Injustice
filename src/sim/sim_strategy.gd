@@ -40,7 +40,7 @@ func plan_for(blitz: String, hunt: String) -> DeploymentPlan:
 	var plan := DeploymentPlan.new()
 	for unit: Dictionary in _section(blitz, hunt).get("units", []):
 		var cell: Array = unit["cell"]
-		plan.add(StringName(unit["type"]), Vector2i(int(cell[0]), int(cell[1])))
+		plan.add(StringName(unit["type"]), Vector2i(int(cell[0]), int(cell[1])), bool(unit.get("guard", false)))
 	return plan
 
 

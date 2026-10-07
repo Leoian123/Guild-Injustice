@@ -28,10 +28,24 @@ static func create_world(scenario: ScenarioData, rules: RulesData, seed_value: i
 	return world
 
 
+## Tools and tests: a world with the enemies of a chosen variant combination, no roll.
+static func create_world_with_variants(scenario: ScenarioData, rules: RulesData, blitz: String, hunt: String) -> World:
+	var world := World.new(rules, SimMap.load_from_file(scenario.map_path), 0)
+	world.blitz_variant = blitz
+	world.hunt_variant = hunt
+	_spawn_group(world, scenario.group_entries(&"blitz", blitz))
+	_spawn_group(world, scenario.group_entries(&"hunt", hunt))
+	return world
+
+
 ## "Via": the player's units enter the world in plan order.
 static func deploy(world: World, plan: DeploymentPlan) -> void:
 	for entry: Dictionary in plan.entries:
-		world.spawn_unit(unit_data(entry["type"]), SimUnit.Faction.PLAYER, SimMap.cell_center(entry["cell"]))
+		var unit := world.spawn_unit(unit_data(entry["type"]), SimUnit.Faction.PLAYER, SimMap.cell_center(entry["cell"]))
+		if entry["guard"]:
+			# A guard's post is the relic, wherever it was deployed (GDD §7).
+			unit.guard = true
+			unit.home = world.map.relic_position()
 
 
 static func _roll_variant(rng: RandomNumberGenerator) -> String:

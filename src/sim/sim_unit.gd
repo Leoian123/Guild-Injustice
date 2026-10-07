@@ -39,6 +39,12 @@ var last_target_tick: int = 0
 var age: int = 0
 ## Reanimated units leave no corpse (GDD §6.7).
 var reanimated: bool = false
+## Only rational units take orders (GDD §7).
+var rational: bool = false
+## Guard of the relic (GDD §7): home is the relic, no chasing, never flees.
+var guard: bool = false
+## Raider whose path is fully blocked: this enemy is accepted as target (GDD §6.3).
+var blocker_id: int = NO_TARGET
 
 ## Test mode (docs/TESTS.md): with AI off the unit only attacks forced_target_id.
 var ai_enabled: bool = true
@@ -62,6 +68,7 @@ func _init(p_id: int, p_data: UnitData, p_faction: Faction, p_position: Vector2,
 	speed_per_tick = p_data.speed / tick_rate
 	engage_radius = p_data.engage_radius
 	chase_radius = p_data.chase_radius
+	rational = p_data.rational
 	will = SimWill.create(p_data.will)
 	for ability_name: StringName in p_data.abilities:
 		abilities.append(SimAbility.create(ability_name))
@@ -89,6 +96,8 @@ func has_ability(ability_script: Script) -> bool:
 
 
 func is_fearless() -> bool:
+	if guard:
+		return true
 	for ability: SimAbility in abilities:
 		if ability.prevents_flee():
 			return true

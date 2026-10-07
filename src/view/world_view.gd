@@ -19,6 +19,7 @@ const SIGHT_COLOR: Color = Color(0.3, 1.0, 0.4, 0.8)
 const BLOCKED_COLOR: Color = Color(1.0, 0.3, 0.3, 0.8)
 const LABEL_COLOR: Color = Color(1, 1, 1)
 const REVEAL_PREVIEW_COLOR: Color = Color(1, 1, 1, 0.35)
+const GUARD_COLOR: Color = Color(0.95, 0.8, 0.3)
 
 ## One letter per unit type, drawn on the unit.
 const LETTERS: Dictionary = {
@@ -53,7 +54,7 @@ func _draw() -> void:
 		_draw_unit(unit, cell)
 	if controller.phase == GameController.Phase.DEPLOY:
 		for entry: Dictionary in controller.plan.entries:
-			_draw_planned(entry["type"], entry["cell"], cell)
+			_draw_planned(entry["type"], entry["cell"], entry["guard"], cell)
 	if fogged:
 		_draw_fog(world.map, cell)
 	# Threat markers belong to the fog: a marker disappears once its zone is visible (GDD §5.1).
@@ -106,6 +107,8 @@ func _draw_unit(unit: SimUnit, cell: float) -> void:
 	draw_circle(center, radius, color)
 	if unit.state == SimUnit.State.FLEE:
 		draw_arc(center, radius + 2.0, 0, TAU, 24, FLEE_COLOR, 2.0)
+	if unit.guard:
+		draw_rect(Rect2(center - Vector2(radius, radius) - Vector2(2, 2), Vector2(radius, radius) * 2.0 + Vector2(4, 4)), GUARD_COLOR, false, 1.5)
 	draw_line(center, center + unit.facing * radius * 1.4, Color.WHITE, 1.5)
 	_draw_text(center, LETTERS.get(unit.unit_type, "?"), Color.BLACK, 10)
 	var bar := Rect2(center + Vector2(-radius, -radius - 5.0), Vector2(radius * 2.0, 3.0))
@@ -116,9 +119,12 @@ func _draw_unit(unit: SimUnit, cell: float) -> void:
 		_draw_text(center + Vector2(0, -radius - 10.0), "%s %d" % [STATE_SHORT[unit.state], unit.hp], LABEL_COLOR, 9)
 
 
-func _draw_planned(unit_type: StringName, cell_position: Vector2i, cell: float) -> void:
+func _draw_planned(unit_type: StringName, cell_position: Vector2i, guard: bool, cell: float) -> void:
 	var center := SimMap.cell_center(cell_position) * cell
 	draw_arc(center, cell * 0.4, 0, TAU, 24, PLAN_COLOR, 2.0)
+	if guard:
+		var half := cell * 0.4 + 2.0
+		draw_rect(Rect2(center - Vector2(half, half), Vector2(half, half) * 2.0), GUARD_COLOR, false, 1.5)
 	_draw_text(center, LETTERS.get(unit_type, "?"), PLAN_COLOR, 10)
 
 

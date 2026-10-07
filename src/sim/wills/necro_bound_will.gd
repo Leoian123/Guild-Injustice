@@ -27,6 +27,10 @@ func accepts(world: World, unit: SimUnit, enemy: SimUnit) -> bool:
 	return world.map.relic_position().distance_to(enemy.position) <= world.rules.relic_contest_radius
 
 
+func is_raider() -> bool:
+	return true
+
+
 func idle_destination(world: World, _unit: SimUnit) -> Variant:
 	return world.map.relic_position()
 
