@@ -303,4 +303,4 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: nessuna modifica finché l'umano non decide.
 - Alternative: (a) punto alle spalle a mezza cella invece di 1, con una costante `BACKSTAB_APPROACH` = 0,5: margine sufficiente anche contro il nemico più veloce, il servo a 0,15 celle per tick; (b) il ladro si ferma sul punto alle spalle solo se ci arriva entro la portata dopo il movimento di tutti (richiede di anticipare il movimento del bersaglio); (c) lasciare così.
 - Cambia l'esito di una battaglia: sì
-- Stato: da confermare
+- Stato: decisa dall'umano (7 ottobre 2026) con una regola diversa dalle alternative: contro un bersaglio in movimento (stato `MOVE` o `FLEE`) il ladro gli va addosso e colpisce appena è a portata, anche di fronte, poi torna a riposizionarsi; contro un bersaglio fermo si posiziona prima alle spalle (GDD §7, T34). "In movimento" si legge dallo stato del bersaglio, cioè dal suo ultimo movimento: se il bersaglio ha un ID più alto, nella fase 3 il ladro vede lo stato del tick precedente.

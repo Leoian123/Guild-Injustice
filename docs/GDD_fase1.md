@@ -150,7 +150,8 @@ Budget dello scenario: **2457**.
 **Ladro, pugnalata.**
 - Colpo alle spalle: danno × `BACKSTAB_MULT`.
 - Bersaglio preferito: tra i nemici notati, quelli isolati (nessun loro alleato entro `ISOLATION_RADIUS`); fra questi il più vicino, poi meno vita, poi ID. Se nessuno è isolato, regola comune.
-- Si avvicina al punto 1 cella dietro al bersaglio (opposto al suo orientamento), anche quando il bersaglio è già a portata. **Prima si posiziona, poi colpisce**: finché il punto alle spalle è raggiungibile (non è muro), il ladro attacca solo quando è alle spalle (§6.5) e non spreca il colpo pronto in un attacco frontale. Se quel punto è muro, va diretto sul bersaglio e attacca normalmente.
+- **Bersaglio fermo** (stato diverso da `MOVE` e `FLEE`): si avvicina al punto 1 cella dietro al bersaglio (opposto al suo orientamento), anche quando il bersaglio è già a portata. **Prima si posiziona, poi colpisce**: finché il punto alle spalle non è muro, il ladro attacca solo quando è alle spalle (§6.5) e non spreca il colpo pronto in un attacco frontale. Se quel punto è muro, va diretto sul bersaglio e attacca normalmente.
+- **Bersaglio in movimento** (stato `MOVE` o `FLEE`: cammina, arretra, fugge): il ladro gli va addosso e colpisce appena è a portata, anche di fronte. Appena il bersaglio si ferma, torna a riposizionarsi alle spalle. Se l'arciere arretra, il ladro lo segue.
 
 **Paladino, corazza.** Ogni colpo ricevuto è ridotto di `ARMOR_REDUCTION`. Se nella fotografia almeno `SURROUND_COUNT` nemici vivi sono entro `SURROUND_RADIUS`, la riduzione non si applica.
 

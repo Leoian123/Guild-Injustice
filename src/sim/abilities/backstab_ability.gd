@@ -32,8 +32,13 @@ func preferred_target(world: World, unit: SimUnit, candidates: Array[SimUnit]) -
 	return best
 
 
-# Position first, then strike (GDD §7): while the point behind the target is not a wall,
-# the thief attacks only from behind and never spends a ready attack on a frontal hit.
+## A target that moved in its last movement step: walking, backing away or fleeing.
+static func is_moving(target: SimUnit) -> bool:
+	return target.state == SimUnit.State.MOVE or target.state == SimUnit.State.FLEE
+
+
+# Still target: position first, then strike (GDD §7). While the point behind it is not a wall,
+# the thief attacks only from behind. A moving target is hit as soon as it is in reach.
 func blocks_attack(world: World, unit: SimUnit) -> bool:
 	var target := world.get_unit(unit.target_id)
 	if target == null or approach_point(world, unit, target) == null:
@@ -41,8 +46,11 @@ func blocks_attack(world: World, unit: SimUnit) -> bool:
 	return not is_behind(unit.position, target.position, target.facing)
 
 
-# One cell behind the target, opposite to its facing; straight at it if that point is a wall.
+# Still target: one cell behind it, opposite to its facing. Moving target, or wall behind it:
+# null, so the thief goes straight at the target like any unit.
 func approach_point(world: World, _unit: SimUnit, target: SimUnit) -> Variant:
+	if is_moving(target):
+		return null
 	var behind := target.position - target.facing.normalized()
 	if world.map.is_wall(Vector2i(behind.floor())):
 		return null

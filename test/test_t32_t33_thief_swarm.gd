@@ -20,6 +20,16 @@ func test_T32_wall_behind_means_frontal_hits() -> void:
 	_assert_hits_are_multiples(world, undead, 6)
 
 
+func test_T34_thief_hits_a_target_walking_away() -> void:
+	var world := TestWorlds.world(1)
+	TestWorlds.spawn(world, &"thief", SimUnit.Faction.PLAYER, Vector2i(3, 6), true)
+	var undead := TestWorlds.spawn(world, &"undead", SimUnit.Faction.ENEMY, Vector2i(6, 6), true)
+	TestWorlds.add_anchors(world)
+
+	TestWorlds.run_until(world, 60)
+	assert_int(undead.hp).is_less(80)
+
+
 func test_T33_swarm_moves_together() -> void:
 	var world := TestWorlds.world(1)
 	var rats: Array[SimUnit] = []
