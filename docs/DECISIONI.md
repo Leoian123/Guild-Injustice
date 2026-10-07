@@ -391,3 +391,17 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: nessuna.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-041 · Dettagli di `tools/sim.sh` e prestazioni
+- Sezione GDD: §11, §12
+- Ambiguità: dettagli del contratto non scritti; ottimizzazioni.
+- Scelta:
+  - `SimRunner` (`src/sim/sim_runner.gd`) è l'unica API per eseguire una battaglia da scenario, strategia e seed. La usano `tools/run_sim.gd` e i test di livello "Simulazione" (T01; T15 con `roll_variants`).
+  - La strategia si valida per **tutti** i seed prima di eseguire qualunque battaglia: se un seed estrae una combinazione per cui non è valida, codice 2, motivo su stderr ("invalid strategy '<nome>' for seed N, <combinazione>: <motivo>") e nessuna riga scritta. Argomenti sbagliati, scenario o file mancanti: codice 1.
+  - I percorsi degli argomenti sono relativi alla radice del progetto; sono accettati anche percorsi assoluti.
+  - Le chiavi della riga JSON seguono l'ordine del §11 (`JSON.stringify` senza ordinamento). `ticks` = tick eseguiti (`end_tick + 1`). `survivors` conta le unità vive per tipo e fazione, rianimati compresi fra i nemici. `events` è il registro del mondo.
+  - Riepilogo su stdout: vittorie/partite in totale e per combinazione `A-A`, `A-B`, `B-A`, `B-B`.
+  - Prestazioni: indice dei necromanti, linea di vista senza elenchi intermedi, candidati della fase 2 ristretti ai nemici vivi elencati all'inizio della fase. Verifica: le impronte finali di 16 battaglie (4 strategie × 4 seed) sono identiche prima e dopo. Da 2,56 a 1,35 ms per tick.
+- Alternative: validare ogni seed solo al momento di eseguirlo (output parziale prima dell'errore).
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
