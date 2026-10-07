@@ -207,3 +207,11 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: passo accorciato fino al bordo dell'influenza; arretramento solo da nemici in vista.
 - Cambia l'esito di una battaglia: no (è il testo del §6.8 applicato alla lettera)
 - Stato: confermata
+
+### D-023 · Campi di stato fuori dallo `state_hash`
+- Sezione GDD: §12; `.claude/rules/simulation.md`
+- Ambiguità: la regola del progetto chiede di aggiungere all'hash ogni nuovo campo di stato, ma il §12 fissa il formato riga per riga. Non sono nell'hash: punto di schieramento e tick dell'ultimo calcolo del bersaglio (M3), morsi rimasti e timer di digestione del ratto (M3.1).
+- Scelta: il formato resta quello del §12, fonte di verità. Il determinismo non cambia: ogni campo escluso dipende solo da input e seed. L'hash è solo meno sensibile a una divergenza che non tocca ancora vita, posizione o bersaglio, e che di norma si vede nei tick successivi.
+- Alternative: aggiungere al §12 una riga per i campi di volontà (`will|id|…`), con modifica del GDD.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata (da segnalare all'umano: la regola e il §12 si contraddicono)
