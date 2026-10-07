@@ -46,6 +46,12 @@ static func add_anchors(world_value: World) -> void:
 	spawn(world_value, &"undead", SimUnit.Faction.ENEMY, Vector2i(21, 10), false)
 
 
+## Steps until tick `last` has run ("after tick N" in docs/TESTS.md).
+static func run_until(world_value: World, last: int) -> void:
+	while world_value.tick <= last:
+		world_value.step()
+
+
 ## Unit "in (x,y)" = at the center of the cell (docs/TESTS.md).
 static func spawn(world_value: World, unit_type: StringName, faction: SimUnit.Faction, cell: Vector2i, ai_enabled: bool) -> SimUnit:
 	var unit := world_value.spawn_unit(unit_data(unit_type), faction, SimMap.cell_center(cell))
