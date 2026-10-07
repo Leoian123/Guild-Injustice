@@ -12,6 +12,7 @@ rat_hunger_bites = 3
 rat_digest_ticks = 100
 reanimate_hp_ratio = 0.5
 reanimate_k_base = 1.0
+swarm_radius = 3.0
 relic_on_radius = 0.5
 relic_contest_radius = 1.5
 steal_ticks = 100

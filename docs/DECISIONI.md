@@ -238,7 +238,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: la prima scelta avviene appena il ratto è senza bersaglio, poi ogni 20 tick dalla scelta precedente, anche se il ratto non è ancora arrivato; il conteggio continua anche mentre il ratto ha un bersaglio. Le candidate sono le celle calpestabili il cui centro dista ≤ `WANDER_RADIUS` dalla posizione del ratto, compresa la sua cella, in ordine di riga e colonna; la destinazione è il centro della cella scelta.
 - Alternative: prima scelta dopo 20 tick; esclusa la cella attuale.
 - Cambia l'esito di una battaglia: sì (uso dell'RNG e movimento dei ratti)
-- Stato: da confermare
+- Stato: decisa dall'umano (7 ottobre 2026), diversa dalla scelta iniziale: vagabondaggio a sciame (GDD §7, `SWARM_RADIUS`, T33). La prima votazione avviene al tick 20, come ogni evento "ogni N tick" (§6.1), quindi i ratti appena schierati stanno fermi per 1 secondo.
 
 ### D-027 · Il ladro si sposta alle spalle anche quando è già a portata
 - Sezione GDD: §7 (Ladro), §6.5
@@ -246,7 +246,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: con il punto alle spalle libero, il ladro va sempre verso quel punto, anche se il bersaglio è già a portata, e intanto attacca quando la ricarica è pronta. Arrivato, resta lì. Se il punto è un muro vale la regola comune: va diretto sul bersaglio e si ferma a portata. Senza questa lettura un ladro che arriva di fronte si fermerebbe a portata e non pugnalerebbe mai alle spalle.
 - Alternative: regola comune, cioè fermo appena a portata (la pugnalata riesce solo se arriva già da dietro).
 - Cambia l'esito di una battaglia: sì
-- Stato: da confermare
+- Stato: decisa dall'umano (7 ottobre 2026), diversa dalla scelta iniziale: prima si posiziona, poi colpisce; finché il punto alle spalle non è muro, il ladro attacca solo da dietro (GDD §7, T32). Vedi D-032 per un caso limite.
 
 ### D-028 · Unità nate in battaglia: orientamento, rianimazione di cadaveri nemici
 - Sezione GDD: §6.5, §7, §8
@@ -296,3 +296,11 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: generatore separato per i cadaveri (Δ-14); dardo deciso nella fase 7, anticipando l'attacco.
 - Cambia l'esito di una battaglia: no (le regole sono quelle chieste; qui ci sono solo i dettagli tecnici)
 - Stato: confermata
+
+### D-032 · Il ladro non raggiunge mai un bersaglio che cammina via
+- Sezione GDD: §7 (Ladro), §6.2
+- Ambiguità: il punto da raggiungere è esattamente 1 cella dietro il bersaglio, e la portata del ladro è esattamente 1. Se il bersaglio si allontana, il ladro (con ID più basso) arriva a 1,00 nella fase 3, poi il bersaglio si muove e nella fase 4 il ladro è a 1,075: fuori portata. Il ladro resta incollato alle spalle senza colpire, finché il bersaglio non esce dal suo raggio di inseguimento. Con un ID più alto del bersaglio il problema non c'è: l'esito dipende dall'ordine degli ID. Trovato con una sonda: contro un non morto senza mente che cammina verso la reliquia, 0 colpi in circa 100 tick.
+- Scelta: nessuna modifica finché l'umano non decide.
+- Alternative: (a) punto alle spalle a mezza cella invece di 1, con una costante `BACKSTAB_APPROACH` = 0,5: margine sufficiente anche contro il nemico più veloce, il servo a 0,15 celle per tick; (b) il ladro si ferma sul punto alle spalle solo se ci arriva entro la portata dopo il movimento di tutti (richiede di anticipare il movimento del bersaglio); (c) lasciare così.
+- Cambia l'esito di una battaglia: sì
+- Stato: da confermare

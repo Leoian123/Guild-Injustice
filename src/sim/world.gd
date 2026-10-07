@@ -85,19 +85,6 @@ func log_event(type: StringName, unit_id: int, detail: StringName) -> void:
 	events.append({"tick": tick, "type": String(type), "unit": unit_id, "detail": String(detail)})
 
 
-## Walkable cells whose center is within `radius` of `center`, by row then column.
-func walkable_cells_within(center: Vector2, radius: float) -> Array[Vector2i]:
-	var cells: Array[Vector2i] = []
-	var low := Vector2i((center - Vector2(radius, radius)).floor())
-	var high := Vector2i((center + Vector2(radius, radius)).floor())
-	for y: int in range(low.y, high.y + 1):
-		for x: int in range(low.x, high.x + 1):
-			var cell := Vector2i(x, y)
-			if map.is_walkable(cell) and SimMap.cell_center(cell).distance_to(center) <= radius:
-				cells.append(cell)
-	return cells
-
-
 func get_unit(unit_id: int) -> SimUnit:
 	if unit_id < 1 or unit_id > units.size():
 		return null
@@ -215,6 +202,7 @@ func _choose_target(unit: SimUnit) -> int:
 
 # Phase 3: movement along A* at speed / TICK_RATE cells per tick (GDD §6.3, §6.6, §6.8).
 func _phase_movement() -> void:
+	WanderBehavior.run_swarms(self)
 	for unit: SimUnit in units:
 		if not unit.is_alive() or not unit.ai_enabled:
 			continue
@@ -232,6 +220,8 @@ func _phase_movement() -> void:
 			continue
 		var destination: Variant = null
 		if target != null:
+			for ability: SimAbility in unit.abilities:
+				ability.on_has_target(self, unit)
 			destination = _approach_point(unit, target)
 			if destination == null:
 				if _can_attack(unit, target.position):

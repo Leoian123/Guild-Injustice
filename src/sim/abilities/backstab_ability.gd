@@ -32,6 +32,15 @@ func preferred_target(world: World, unit: SimUnit, candidates: Array[SimUnit]) -
 	return best
 
 
+# Position first, then strike (GDD §7): while the point behind the target is not a wall,
+# the thief attacks only from behind and never spends a ready attack on a frontal hit.
+func blocks_attack(world: World, unit: SimUnit) -> bool:
+	var target := world.get_unit(unit.target_id)
+	if target == null or approach_point(world, unit, target) == null:
+		return false
+	return not is_behind(unit.position, target.position, target.facing)
+
+
 # One cell behind the target, opposite to its facing; straight at it if that point is a wall.
 func approach_point(world: World, _unit: SimUnit, target: SimUnit) -> Variant:
 	var behind := target.position - target.facing.normalized()

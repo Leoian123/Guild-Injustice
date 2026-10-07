@@ -42,6 +42,11 @@ func approach_point(_world: World, _unit: SimUnit, _target: SimUnit) -> Variant:
 	return null
 
 
+## Phase 3: called for a unit that has a target, before it moves.
+func on_has_target(_world: World, _unit: SimUnit) -> void:
+	pass
+
+
 ## Phase 3: where to go without a target, if the will has no destination; null = stay.
 func idle_destination(_world: World, _unit: SimUnit) -> Variant:
 	return null

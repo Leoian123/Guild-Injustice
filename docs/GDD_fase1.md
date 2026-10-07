@@ -137,7 +137,7 @@ Budget dello scenario: **2457**.
 "Insegue" è `chase_radius`, in celle (§6.8).
 
 **Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e inseguono finché hanno fame (§6.8).
-- *Vagabondaggio*: senza bersaglio, ogni `WANDER_PERIOD_TICKS` tick (dal proprio ultimo spostamento casuale) sceglie con l'RNG una cella calpestabile entro `WANDER_RADIUS` e ci va.
+- *Vagabondaggio a sciame*: i ratti del giocatore con `WanderBehavior`, vivi e senza bersaglio (sazi compresi), formano sciami. Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Un ratto che ottiene un bersaglio abbandona la meta.
 - *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Le celle servono solo a distribuire le nascite: per tutto il resto le unità non si bloccano (§6.3).
 
 **Goblin, coraggio di gruppo.**
@@ -150,7 +150,7 @@ Budget dello scenario: **2457**.
 **Ladro, pugnalata.**
 - Colpo alle spalle: danno × `BACKSTAB_MULT`.
 - Bersaglio preferito: tra i nemici notati, quelli isolati (nessun loro alleato entro `ISOLATION_RADIUS`); fra questi il più vicino, poi meno vita, poi ID. Se nessuno è isolato, regola comune.
-- Si avvicina al punto 1 cella dietro al bersaglio (opposto al suo orientamento); se quel punto è muro, va diretto sul bersaglio.
+- Si avvicina al punto 1 cella dietro al bersaglio (opposto al suo orientamento), anche quando il bersaglio è già a portata. **Prima si posiziona, poi colpisce**: finché il punto alle spalle è raggiungibile (non è muro), il ladro attacca solo quando è alle spalle (§6.5) e non spreca il colpo pronto in un attacco frontale. Se quel punto è muro, va diretto sul bersaglio e attacca normalmente.
 
 **Paladino, corazza.** Ogni colpo ricevuto è ridotto di `ARMOR_REDUCTION`. Se nella fotografia almeno `SURROUND_COUNT` nemici vivi sono entro `SURROUND_RADIUS`, la riduzione non si applica.
 
@@ -207,6 +207,7 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `BREED_PERIOD_TICKS` | 100 | | `REANIMATE_RADIUS` | 6,0 |
 | `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
 | `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
+| `SWARM_RADIUS` | 3,0 | | | |
 | `RAT_HUNGER_BITES` | 3 | | `RAT_DIGEST_TICKS` | 100 |
 | `REANIMATE_HP_RATIO` | 0,5 | | `REANIMATE_K_BASE` | 1,0 |
 
