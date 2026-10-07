@@ -36,8 +36,20 @@ static func temple_01() -> SimMap:
 
 
 ## World on the test map. Call add_anchors() after creating the test's own units.
-static func world(seed_value: int, extra_walls: Array[Vector2i] = []) -> World:
-	return World.new(rules(), test_map(extra_walls), seed_value)
+static func world(seed_value: int, extra_walls: Array[Vector2i] = [], rules_value: RulesData = null) -> World:
+	return World.new(rules_value if rules_value != null else rules(), test_map(extra_walls), seed_value)
+
+
+## Test-local copy of the rules with another REANIMATE_K_BASE (docs/TESTS.md, "Dado neutralizzato" = 0).
+static func rules_with_k(k_base: float) -> RulesData:
+	var copy := rules().duplicate() as RulesData
+	copy.reanimate_k_base = k_base
+	return copy
+
+
+## World with the reanimation roll neutralized: every corpse that survives is reanimable.
+static func neutral_dice_world(seed_value: int) -> World:
+	return world(seed_value, [], rules_with_k(0.0))
 
 
 ## Anchors: player paladin at (2,10) and enemy undead at (21,10), AI off.

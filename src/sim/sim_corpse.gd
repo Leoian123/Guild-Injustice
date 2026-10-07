@@ -6,3 +6,5 @@ var unit_id: int = 0
 var unit_type: StringName = &""
 var position: Vector2 = Vector2.ZERO
 var ttl: int = 0
+## Outcome of the reanimation roll at death (GDD §6.7).
+var reanimable: bool = false

@@ -44,11 +44,14 @@ func spawn_newborn(data: UnitData, faction: SimUnit.Faction, position: Vector2) 
 	return unit
 
 
-## Reanimation (GDD §8): same stats as the original, enemy faction, only FearlessTrait,
-## NecroBoundWill (GDD §6.8), new ID, at the corpse; the corpse disappears.
+## Reanimation (GDD §8): max HP = floor(dead unit's max HP × REANIMATE_HP_RATIO), other stats
+## of the original, enemy faction, only FearlessTrait, NecroBoundWill (GDD §6.8), new ID,
+## at the corpse; the corpse disappears.
 func reanimate(corpse: SimCorpse) -> SimUnit:
 	var original := get_unit(corpse.unit_id)
 	var unit := SimUnit.new(_next_id, original.data, SimUnit.Faction.ENEMY, corpse.position, rules.tick_rate)
+	unit.max_hp = reanimated_max_hp(original.max_hp)
+	unit.hp = unit.max_hp
 	var abilities: Array[SimAbility] = [FearlessTrait.new()]
 	unit.abilities = abilities
 	unit.will = NecroBoundWill.new()
@@ -57,6 +60,17 @@ func reanimate(corpse: SimCorpse) -> SimUnit:
 	corpses.erase(corpse)
 	log_event(&"reanimate", unit.id, unit.unit_type)
 	return unit
+
+
+func reanimated_max_hp(max_hp: int) -> int:
+	return floori(max_hp * rules.reanimate_hp_ratio)
+
+
+## Chance that a corpse is reanimable (GDD §6.7): max HP / (max HP + K), K = REANIMATE_K_BASE + x.
+## x gathers body conditions (faith, disease…) outside Phase 1: today x = 0 (Δ-13).
+static func reanimation_chance(max_hp: int, rules_value: RulesData) -> float:
+	var k: float = rules_value.reanimate_k_base
+	return max_hp / (max_hp + k)
 
 
 func _add_unit(unit: SimUnit) -> SimUnit:
@@ -342,6 +356,8 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 	for unit: SimUnit in units:
 		if not snapshot.is_alive(unit.id) or unit.attack_cd > 0 or unit.state == SimUnit.State.FLEE:
 			continue
+		if _attack_blocked(unit):
+			continue
 		var target := get_unit(unit.target_id)
 		if target == null or not snapshot.is_alive(target.id):
 			continue
@@ -363,6 +379,13 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 			unit.state = SimUnit.State.ATTACK
 
 
+func _attack_blocked(unit: SimUnit) -> bool:
+	for ability: SimAbility in unit.abilities:
+		if ability.blocks_attack(self, unit):
+			return true
+	return false
+
+
 # Phase 5: damage applied all at once.
 func _phase_damage() -> void:
 	for unit: SimUnit in units:
@@ -376,13 +399,15 @@ func _phase_deaths() -> void:
 			unit.state = SimUnit.State.DEAD
 			unit.target_id = SimUnit.NO_TARGET
 			log_event(&"death", unit.id, unit.unit_type)
-			if unit.reanimated:
+			# A body too weak to be raised again is destroyed (GDD §6.7).
+			if reanimated_max_hp(unit.max_hp) < 1:
 				continue
 			var corpse := SimCorpse.new()
 			corpse.unit_id = unit.id
 			corpse.unit_type = unit.unit_type
 			corpse.position = unit.position
 			corpse.ttl = rules.corpse_ticks
+			corpse.reanimable = rng.randf() < reanimation_chance(unit.max_hp, rules)
 			_insert_corpse(corpse)
 
 

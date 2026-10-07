@@ -24,7 +24,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: tenuto così, per dare un motivo per uccidere il necromante per primo.
 - Alternative: rianimati con vita dimezzata; esclusione delle unità d'élite.
 - Cambia l'esito di una battaglia: sì
-- Stato: da confermare (decisione dell'umano, da rivedere dopo il primo report di bilanciamento)
+- Stato: chiusa (umano, 7 ottobre 2026): rianimazione a catena a metà vita, dado della rianimabilità, scelta della vita maggiore (GDD §6.7, §8; D-031).
 
 ### D-001 · Valore di `tick` nello `state_hash`
 - Sezione GDD: §12, §6.1
@@ -257,7 +257,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - Il necromante può rianimare **qualunque** cadavere, anche di un'unità nemica (servo, non morto, revenant): il GDD dice "un cadavere".
 - Alternative: orientamento del cadavere; solo cadaveri delle unità del giocatore.
 - Cambia l'esito di una battaglia: sì (orientamento e quindi pugnalate; il necromante che rialza i propri servi)
-- Stato: da confermare
+- Stato: in parte decisa (umano, 7 ottobre 2026): il necromante rianima qualunque cadavere, servi compresi ("scudi di carne"). Resta da confermare l'orientamento iniziale di neonati e rianimati.
 
 ### D-029 · Dettagli della fuga del goblin
 - Sezione GDD: §7 (Goblin)
@@ -282,4 +282,17 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - Le statistiche dei test ora vengono da `data/units/`; le varianti si costruiscono nel test (`TestWorlds.without_ability`).
 - Alternative: neonati sempre con IA attiva (T08 fallirebbe in modo casuale).
 - Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-031 · Rianimazione a catena, dado della rianimabilità, dardo
+- Sezione GDD: §6.7, §8, §9, §10 (riscritti su richiesta dell'umano, 7 ottobre 2026)
+- Ambiguità: dettagli di implementazione delle nuove regole.
+- Scelta:
+  - Il dado si tira nella fase 6, alla morte, in ordine di ID, con l'RNG unico del mondo (`.claude/rules/simulation.md` vieta un secondo generatore). Se il cadavere si distrugge non si tira.
+  - La probabilità usa la vita massima dell'unità morta, con K = `REANIMATE_K_BASE` (x = 0, Δ-13).
+  - Il cadavere non rianimabile resta, con `reanimable = false`, per `CORPSE_TICKS`: serve alla vista (M5).
+  - La regola del dardo si valuta nella fase 4 sui cadaveri esistenti in quel momento. Se un cadavere compare nella fase 6 dello stesso tick, il necromante può aver già tirato e rianimare nella fase 7: succede solo nel tick esatto in cui la ricarica è pronta e il primo cadavere compare.
+  - Nei test la rianimazione si isola dal dado con una copia delle regole a K = 0 ("Dado neutralizzato" in `docs/TESTS.md`).
+- Alternative: generatore separato per i cadaveri (Δ-14); dardo deciso nella fase 7, anticipando l'attacco.
+- Cambia l'esito di una battaglia: no (le regole sono quelle chieste; qui ci sono solo i dettagli tecnici)
 - Stato: confermata

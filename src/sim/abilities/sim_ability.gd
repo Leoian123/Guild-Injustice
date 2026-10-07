@@ -62,6 +62,11 @@ func on_periodic(_world: World, _unit: SimUnit) -> void:
 	pass
 
 
+## Phase 4: true if the unit gives up its attack this tick (necromancer about to reanimate).
+func blocks_attack(_world: World, _unit: SimUnit) -> bool:
+	return false
+
+
 ## True for FearlessTrait: the unit never enters FLEE.
 func prevents_flee() -> bool:
 	return false

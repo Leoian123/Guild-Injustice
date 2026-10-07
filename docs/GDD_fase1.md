@@ -98,7 +98,10 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 
 ### 6.7 Morte e cadaveri
 - Un cadavere resta per `CORPSE_TICKS` tick nella posizione della morte.
-- Un'unità rianimata, quando muore, non lascia cadavere.
+- **Alla morte** (fase 6, in ordine di ID), per ogni unità, rianimati compresi:
+  - se `floor(vita massima × REANIMATE_HP_RATIO)` < 1, il cadavere si distrugge: non c'è;
+  - altrimenti si tira il **dado della rianimabilità** con l'RNG. Il cadavere è rianimabile con probabilità `vita massima / (vita massima + K)`, dove `K = REANIMATE_K_BASE + x`. Il termine x raccoglie le condizioni del corpo (fede, malattia…), fuori dalla Fase 1: oggi x = 0. Più vita, più probabile.
+  - Un cadavere non rianimabile resta visibile per lo stesso tempo, ma il necromante lo ignora.
 
 ### 6.8 Volontà di combattere
 Ogni unità ha esattamente un componente di volontà. La volontà decide quali nemici notati (§6.4) l'unità accetta come bersaglio. Un bersaglio che la volontà non accetta più viene abbandonato subito, come uno non più notato. La scelta fra i bersagli accettati segue la regola comune del §6.4.
@@ -160,8 +163,9 @@ Budget dello scenario: **2457**.
 | Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | 2,2 | 5 | `FearlessTrait` |
 | Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | 1,3 | 6 | `FearlessTrait`, `ReanimateAbility` |
 
-**Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere entro `REANIMATE_RADIUS` e in vista, rianima il più vicino (a parità, ID più basso) e la ricarica riparte.
-- Il rianimato ha vita, danno, tempi, raggi e velocità dell'unità originale, sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
+**Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere rianimabile (§6.7) entro `REANIMATE_RADIUS` e in vista, rianima quello con la **vita massima più alta**: per lui i servitori sono scudi di carne. A parità sceglie il più vicino, poi l'ID più basso. Poi la ricarica riparte. Vale per qualunque cadavere, anche dei propri servi.
+- **Il dardo.** Quando non rianima, il necromante attacca a distanza come le altre unità. Nella fase 4 di un tick in cui la rianimazione è pronta e c'è un cadavere rianimabile entro il raggio e in vista, non attacca: in quel tick rianima.
+- **Rianimazione a catena.** Il rianimato ha vita massima (e vita) pari a `floor(vita massima dell'unità morta × REANIMATE_HP_RATIO)`: metà della vita che aveva l'ultima volta. Esempio: paladino 400, poi 200, poi 100… Danno, tempi, raggi e velocità restano quelli dell'unità originale. Sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
 - Si comporta come un'unità nemica: avanza verso la reliquia.
 
 **Volontà.** Ogni unità nemica ha `NecroBoundWill` (§6.8), compresi i rianimati: la volontà non è un'abilità, quindi il rianimato non la perde.
@@ -181,7 +185,7 @@ Prima della ricognizione l'RNG estrae la variante Blitz (A o B), poi la variante
 
 Le unità sono elencate nell'ordine di assegnazione degli ID.
 
-**Casualità**: solo scelta delle varianti, vagabondaggio dei ratti e cella di nascita dei ratti. Danni e bersagli sono deterministici.
+**Casualità**: solo scelta delle varianti, vagabondaggio dei ratti, cella di nascita dei ratti e dado della rianimabilità (§6.7, un tiro per ogni morte che lascia cadavere). Danni e bersagli sono deterministici.
 
 ## 10. Costanti di regola (`data/rules.tres`)
 
@@ -204,6 +208,7 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
 | `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
 | `RAT_HUNGER_BITES` | 3 | | `RAT_DIGEST_TICKS` | 100 |
+| `REANIMATE_HP_RATIO` | 0,5 | | `REANIMATE_K_BASE` | 1,0 |
 
 ## 11. Contratto di `tools/sim.sh`
 Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cmdline_user_args()`).
