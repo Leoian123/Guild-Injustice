@@ -28,7 +28,10 @@ func on_has_target(_world: World, _unit: SimUnit) -> void:
 	has_patrol_point = false
 
 
-func allows_kite_step(_world: World, unit: SimUnit, position: Vector2) -> bool:
+# A guard's post is the room (GDD §7): it may back away anywhere inside it.
+func allows_kite_step(world: World, unit: SimUnit, position: Vector2) -> bool:
+	if unit.guard and is_in_guarded_room(world, unit):
+		return world.relic_room.has_point(Vector2i(position.floor()))
 	return unit.home.distance_to(position) <= unit.chase_radius
 
 

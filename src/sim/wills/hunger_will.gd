@@ -30,6 +30,10 @@ func on_tick_start(world: World, unit: SimUnit) -> void:
 		var corpse := _nearest_food(world, unit)
 		if corpse != null:
 			meal_id = corpse.unit_id
+			# A rat going to eat abandons its wander destination (GDD §7).
+			for ability: SimAbility in unit.abilities:
+				if ability is WanderBehavior:
+					(ability as WanderBehavior).has_destination = false
 
 
 # Sated: nothing. Hungry with food in sight: nothing, it goes to eat. Hungry: any enemy.

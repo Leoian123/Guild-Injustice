@@ -25,6 +25,23 @@ func test_T27_flesh_shields() -> void:
 	assert_int(world.corpses[0].unit_id).is_equal(goblin.id)
 
 
+func test_T45_integrity_over_hit_points() -> void:
+	var world := TestWorlds.neutral_dice_world(1)
+	TestWorlds.spawn(world, &"necromancer", ENEMY, Vector2i(5, 5), false)
+	var dead_necromancer := TestWorlds.spawn(world, &"necromancer", ENEMY, Vector2i(7, 5), false)
+	var dead_undead := TestWorlds.spawn(world, &"undead", ENEMY, Vector2i(5, 9), false)
+	TestWorlds.add_anchors(world)
+	dead_necromancer.hp = 0
+	dead_undead.hp = 0
+
+	TestWorlds.run_until(world, 0)
+	var risen := world.units[world.units.size() - 1]
+	assert_str(String(risen.unit_type)).is_equal("undead")
+	assert_int(risen.hp).is_equal(75)
+	assert_array(world.corpses).has_size(1)
+	assert_int(world.corpses[0].unit_id).is_equal(dead_necromancer.id)
+
+
 func test_T28_end_of_the_chain() -> void:
 	var world := TestWorlds.neutral_dice_world(1)
 	TestWorlds.spawn(world, &"necromancer", ENEMY, Vector2i(5, 5), false)

@@ -378,6 +378,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - Le stanze sono rettangoli nello scenario. Oggi c'è solo `relic_room` (Cuore: x 31–40, y 10–18). Sulla mappa di test la stanza è x 17–22, y 3–8, lontana dall'ancora nemica: con y fino a 9 una guardia la uccideva e la battaglia finiva.
   - Una guardia sceglie la prima cella appena entra nella stanza (fase 3, in ordine di ID) e poi ai tick di pattuglia. Le celle già scelte da altre guardie sono escluse se c'è alternativa.
   - Il test T42 verifica che le guardie restino nella stanza con mete diverse, ma non distingue da solo la regola delle "celle già scelte": togliendola passa lo stesso, perché la preferenza per le celle senza alleati basta quasi sempre.
+  - Correzioni dopo la revisione: il necromante ora sceglie davvero per integrità (il codice sceglieva ancora per vita massima e T27 non se ne accorgeva; T45 distingue i due criteri); un ratto che va a mangiare abbandona la meta dello sciame; un arciere guardia può arretrare ovunque dentro la stanza (il suo posto è la stanza, non il centro della reliquia).
   - `TestWorlds.run_until` e i cicli dei test si fermano a battaglia finita, e `tools/check.sh` dà 300 s al passo dei test: un ciclo su una battaglia già finita bloccava il gate.
 - Alternative: nessuna rilevante.
 - Cambia l'esito di una battaglia: no
