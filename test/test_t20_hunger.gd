@@ -4,7 +4,8 @@ extends GdUnitTestSuite
 
 func test_T20_rat_bites_until_sated() -> void:
 	var world := TestWorlds.world(1)
-	var rat := TestWorlds.spawn(world, &"rat", SimUnit.Faction.PLAYER, Vector2i(5, 5), true)
+	var rat_data := TestWorlds.without_ability(&"rat", &"WanderBehavior")
+	var rat := TestWorlds.spawn_data(world, rat_data, SimUnit.Faction.PLAYER, Vector2i(5, 5), true)
 	var undead := TestWorlds.spawn(world, &"undead", SimUnit.Faction.ENEMY, Vector2i(6, 5), false)
 	TestWorlds.add_anchors(world)
 	var hunger := rat.will as HungerWill

@@ -9,6 +9,7 @@ func test_every_state_field_changes_the_hash() -> void:
 	for unit: SimUnit in world.units:
 		entities.append(unit)
 		entities.append(unit.will)
+		entities.append_array(unit.abilities)
 	entities.append_array(world.corpses)
 	assert_array(world.corpses).is_not_empty()
 
@@ -44,12 +45,16 @@ func test_rng_state_changes_the_hash() -> void:
 	assert_str(world.state_hash()).is_not_equal(before)
 
 
-# One of each will, a corpse and some history behind them.
+# Every will and ability, a corpse and some history behind them. The necromancer stays
+# beyond REANIMATE_RADIUS so the corpse is not reanimated.
 func _sample_world() -> World:
 	var world := TestWorlds.world(3)
 	TestWorlds.spawn(world, &"rat", SimUnit.Faction.PLAYER, Vector2i(5, 5), true)
 	TestWorlds.spawn(world, &"goblin", SimUnit.Faction.PLAYER, Vector2i(6, 6), true)
-	TestWorlds.spawn(world, &"necromancer", SimUnit.Faction.ENEMY, Vector2i(9, 5), true)
+	TestWorlds.spawn(world, &"archer", SimUnit.Faction.PLAYER, Vector2i(3, 3), true)
+	TestWorlds.spawn(world, &"thief", SimUnit.Faction.PLAYER, Vector2i(4, 7), true)
+	TestWorlds.spawn(world, &"paladin", SimUnit.Faction.PLAYER, Vector2i(6, 3), true)
+	TestWorlds.spawn(world, &"necromancer", SimUnit.Faction.ENEMY, Vector2i(20, 2), true)
 	var servant := TestWorlds.spawn(world, &"servant", SimUnit.Faction.ENEMY, Vector2i(7, 5), true)
 	TestWorlds.add_anchors(world)
 	servant.hp = 1

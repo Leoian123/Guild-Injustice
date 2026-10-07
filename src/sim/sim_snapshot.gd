@@ -8,6 +8,7 @@ var facings: PackedVector2Array = PackedVector2Array()
 var hps: PackedInt32Array = PackedInt32Array()
 var alive: Array[bool] = []
 var factions: Array[SimUnit.Faction] = []
+var types: Array[StringName] = []
 
 
 func _init(units: Array[SimUnit]) -> void:
@@ -17,6 +18,7 @@ func _init(units: Array[SimUnit]) -> void:
 		hps.append(unit.hp)
 		alive.append(unit.is_alive() and unit.hp > 0)
 		factions.append(unit.faction)
+		types.append(unit.unit_type)
 
 
 func size() -> int:

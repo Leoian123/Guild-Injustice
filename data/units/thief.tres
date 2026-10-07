@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/sim/unit_data.gd" id="1_unit"]
+
+[resource]
+script = ExtResource("1_unit")
+unit_type = &"thief"
+cost = 420
+max_hp = 40
+damage = 6
+attack_interval = 1.0
+attack_range = 1.0
+speed = 3.2
+engage_radius = 7.0
+chase_radius = 8.0
+will = &"HoldGroundWill"
+abilities = Array[StringName]([&"BackstabAbility"])

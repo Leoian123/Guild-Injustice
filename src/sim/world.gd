@@ -14,6 +14,9 @@ var units: Array[SimUnit] = []
 ## Sorted by ascending unit ID.
 var corpses: Array[SimCorpse] = []
 
+## Battle log for tools/sim.sh (GDD §11). Output only: it never drives the simulation.
+var events: Array[Dictionary] = []
+
 var _next_id: int = 1
 ## Damage per unit index, filled in phase 4 and applied in phase 5.
 var _pending_damage: PackedInt32Array = PackedInt32Array()
@@ -27,13 +30,58 @@ func _init(p_rules: RulesData, p_map: SimMap, p_seed: int) -> void:
 	rng.seed = p_seed
 
 
+## Deployed unit: starts with age NEWBORN_COOLDOWN_TICKS (GDD §6.1).
 func spawn_unit(data: UnitData, faction: SimUnit.Faction, position: Vector2) -> SimUnit:
 	var unit := SimUnit.new(_next_id, data, faction, position, rules.tick_rate)
+	unit.age = rules.newborn_cooldown_ticks
+	return _add_unit(unit)
+
+
+## Unit born in battle: starts with age 0 (GDD §6.1).
+func spawn_newborn(data: UnitData, faction: SimUnit.Faction, position: Vector2) -> SimUnit:
+	var unit := _add_unit(SimUnit.new(_next_id, data, faction, position, rules.tick_rate))
+	log_event(&"birth", unit.id, unit.unit_type)
+	return unit
+
+
+## Reanimation (GDD §8): same stats as the original, enemy faction, only FearlessTrait,
+## NecroBoundWill (GDD §6.8), new ID, at the corpse; the corpse disappears.
+func reanimate(corpse: SimCorpse) -> SimUnit:
+	var original := get_unit(corpse.unit_id)
+	var unit := SimUnit.new(_next_id, original.data, SimUnit.Faction.ENEMY, corpse.position, rules.tick_rate)
+	var abilities: Array[SimAbility] = [FearlessTrait.new()]
+	unit.abilities = abilities
+	unit.will = NecroBoundWill.new()
+	unit.reanimated = true
+	_add_unit(unit)
+	corpses.erase(corpse)
+	log_event(&"reanimate", unit.id, unit.unit_type)
+	return unit
+
+
+func _add_unit(unit: SimUnit) -> SimUnit:
 	_next_id += 1
-	unit.facing = _initial_facing(faction, position)
+	unit.facing = _initial_facing(unit.faction, unit.position)
 	units.append(unit)
 	unit.will.on_spawn(self, unit)
 	return unit
+
+
+func log_event(type: StringName, unit_id: int, detail: StringName) -> void:
+	events.append({"tick": tick, "type": String(type), "unit": unit_id, "detail": String(detail)})
+
+
+## Walkable cells whose center is within `radius` of `center`, by row then column.
+func walkable_cells_within(center: Vector2, radius: float) -> Array[Vector2i]:
+	var cells: Array[Vector2i] = []
+	var low := Vector2i((center - Vector2(radius, radius)).floor())
+	var high := Vector2i((center + Vector2(radius, radius)).floor())
+	for y: int in range(low.y, high.y + 1):
+		for x: int in range(low.x, high.x + 1):
+			var cell := Vector2i(x, y)
+			if map.is_walkable(cell) and SimMap.cell_center(cell).distance_to(center) <= radius:
+				cells.append(cell)
+	return cells
 
 
 func get_unit(unit_id: int) -> SimUnit:
@@ -62,7 +110,7 @@ func state_hash() -> String:
 
 # Fixed inputs, data derived from them and the per-tick damage buffer are not state.
 func hash_excluded() -> PackedStringArray:
-	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage"])
+	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage", "events"])
 
 
 ## A unit notices living enemies within its engage radius and in sight (GDD §6.4).
@@ -84,14 +132,17 @@ func _initial_facing(faction: SimUnit.Faction, position: Vector2) -> Vector2:
 	return to_relic.normalized()
 
 
-# Phase 1: timers and cooldowns. Flee enter/exit arrives with the goblin in M4.
+# Phase 1: timers, cooldowns and age; flee enter/exit (PackCourageAbility).
 func _phase_states() -> void:
 	for unit: SimUnit in units:
 		if not unit.is_alive():
 			continue
 		if unit.attack_cd > 0:
 			unit.attack_cd -= 1
+		unit.age += 1
 		unit.will.on_tick_start(self, unit)
+		for ability: SimAbility in unit.abilities:
+			ability.on_tick_start(self, unit)
 	var kept: Array[SimCorpse] = []
 	for corpse: SimCorpse in corpses:
 		corpse.ttl -= 1
@@ -104,6 +155,9 @@ func _phase_states() -> void:
 func _phase_targets() -> void:
 	for unit: SimUnit in units:
 		if not unit.is_alive():
+			continue
+		if unit.state == SimUnit.State.FLEE:
+			unit.target_id = SimUnit.NO_TARGET
 			continue
 		if not unit.ai_enabled:
 			var forced := get_unit(unit.forced_target_id)
@@ -124,13 +178,20 @@ func _is_valid_target(unit: SimUnit, other: SimUnit) -> bool:
 	return notices(unit, other) and unit.will.accepts(self, unit, other)
 
 
-# Nearest noticed enemy; ties: less HP, then lower ID (iteration is by ascending ID).
+# Abilities may prefer a target (thief); otherwise the nearest noticed enemy,
+# ties: less HP, then lower ID (iteration is by ascending ID).
 func _choose_target(unit: SimUnit) -> int:
+	var candidates: Array[SimUnit] = []
+	for other: SimUnit in units:
+		if _is_valid_target(unit, other):
+			candidates.append(other)
+	for ability: SimAbility in unit.abilities:
+		var preferred := ability.preferred_target(self, unit, candidates)
+		if preferred != null:
+			return preferred.id
 	var best: SimUnit = null
 	var best_distance: float = 0.0
-	for other: SimUnit in units:
-		if not _is_valid_target(unit, other):
-			continue
+	for other: SimUnit in candidates:
 		var distance := unit.position.distance_squared_to(other.position)
 		if best == null or distance < best_distance or (distance == best_distance and other.hp < best.hp):
 			best = other
@@ -143,6 +204,9 @@ func _phase_movement() -> void:
 	for unit: SimUnit in units:
 		if not unit.is_alive() or not unit.ai_enabled:
 			continue
+		if unit.state == SimUnit.State.FLEE:
+			_move_towards(unit, map.relic_position())
+			continue
 		var target := get_unit(unit.target_id)
 		var threat := _kite_threat(unit)
 		if threat != null:
@@ -154,16 +218,39 @@ func _phase_movement() -> void:
 			continue
 		var destination: Variant = null
 		if target != null:
-			if _can_attack(unit, target.position):
-				unit.state = SimUnit.State.ATTACK
-				continue
-			destination = target.position
+			destination = _approach_point(unit, target)
+			if destination == null:
+				if _can_attack(unit, target.position):
+					unit.state = SimUnit.State.ATTACK
+					continue
+				destination = target.position
 		else:
 			destination = unit.will.idle_destination(self, unit)
+			if destination == null:
+				destination = _ability_idle_destination(unit)
 		if destination != null and _move_towards(unit, destination):
 			unit.state = SimUnit.State.MOVE
+		elif target != null and _can_attack(unit, target.position):
+			unit.state = SimUnit.State.ATTACK
 		else:
 			unit.state = SimUnit.State.IDLE
+
+
+# An ability may steer the approach (thief: one cell behind the target, D-027).
+func _approach_point(unit: SimUnit, target: SimUnit) -> Variant:
+	for ability: SimAbility in unit.abilities:
+		var point: Variant = ability.approach_point(self, unit, target)
+		if point != null:
+			return point
+	return null
+
+
+func _ability_idle_destination(unit: SimUnit) -> Variant:
+	for ability: SimAbility in unit.abilities:
+		var point: Variant = ability.idle_destination(self, unit)
+		if point != null:
+			return point
+	return null
 
 
 # A ranged unit reloading backs away from the nearest living enemy within KITE_RADIUS (GDD §6.8).
@@ -253,7 +340,7 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 	_pending_damage.fill(0)
 	var attackers: Array[SimUnit] = []
 	for unit: SimUnit in units:
-		if not snapshot.is_alive(unit.id) or unit.attack_cd > 0:
+		if not snapshot.is_alive(unit.id) or unit.attack_cd > 0 or unit.state == SimUnit.State.FLEE:
 			continue
 		var target := get_unit(unit.target_id)
 		if target == null or not snapshot.is_alive(target.id):
@@ -288,6 +375,9 @@ func _phase_deaths() -> void:
 		if unit.is_alive() and unit.hp <= 0:
 			unit.state = SimUnit.State.DEAD
 			unit.target_id = SimUnit.NO_TARGET
+			log_event(&"death", unit.id, unit.unit_type)
+			if unit.reanimated:
+				continue
 			var corpse := SimCorpse.new()
 			corpse.unit_id = unit.id
 			corpse.unit_type = unit.unit_type
@@ -304,9 +394,12 @@ func _insert_corpse(corpse: SimCorpse) -> void:
 	corpses.insert(index, corpse)
 
 
-# Phase 7: reanimation, then rat breeding (M4).
+# Phase 7: reanimation, then rat breeding. Units born here do not act until the next tick.
 func _phase_periodic_abilities() -> void:
-	pass
+	for unit: SimUnit in units.duplicate():
+		for ability: SimAbility in unit.abilities:
+			ability.on_periodic(self, unit)
+	BreedAbility.run_breeding(self)
 
 
 # Phase 8: end of battle (GDD §3, M6).

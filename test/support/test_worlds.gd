@@ -54,35 +54,29 @@ static func run_until(world_value: World, last: int) -> void:
 
 ## Unit "in (x,y)" = at the center of the cell (docs/TESTS.md).
 static func spawn(world_value: World, unit_type: StringName, faction: SimUnit.Faction, cell: Vector2i, ai_enabled: bool) -> SimUnit:
-	var unit := world_value.spawn_unit(unit_data(unit_type), faction, SimMap.cell_center(cell))
+	return spawn_data(world_value, unit_data(unit_type), faction, cell, ai_enabled)
+
+
+static func spawn_data(world_value: World, data: UnitData, faction: SimUnit.Faction, cell: Vector2i, ai_enabled: bool) -> SimUnit:
+	var unit := world_value.spawn_unit(data, faction, SimMap.cell_center(cell))
 	unit.ai_enabled = ai_enabled
 	return unit
 
 
-## Starting stats from GDD §7–§8, built in the test until data/units exists (M4).
-## Columns: cost, HP, damage, attack interval (s), attack range, speed, engage radius, chase radius, will.
-const GDD_STATS: Dictionary = {
-	&"rat": [158, 20, 3, 0.8, 1.0, 3.0, 4.0, 0.0, &"HungerWill"],
-	&"goblin": [254, 45, 7, 1.0, 1.0, 2.5, 5.0, 6.0, &"HoldGroundWill"],
-	&"archer": [300, 35, 8, 1.5, 6.0, 1.8, 7.0, 4.0, &"HoldGroundWill"],
-	&"paladin": [1900, 400, 25, 1.4, 1.0, 1.2, 4.0, 5.0, &"HoldGroundWill"],
-	&"servant": [0, 30, 5, 1.0, 1.0, 3.0, 5.0, 0.0, &"NecroBoundWill"],
-	&"undead": [0, 80, 8, 1.3, 1.0, 1.5, 4.0, 0.0, &"NecroBoundWill"],
-	&"necromancer": [0, 120, 10, 2.0, 5.0, 1.3, 6.0, 0.0, &"NecroBoundWill"],
-}
-
-
+## The shared unit data from data/units/. Read-only: tests needing a variant use without_ability().
 static func unit_data(unit_type: StringName) -> UnitData:
-	var stats: Array = GDD_STATS[unit_type]
-	var data := UnitData.new()
-	data.unit_type = unit_type
-	data.cost = stats[0]
-	data.max_hp = stats[1]
-	data.damage = stats[2]
-	data.attack_interval = stats[3]
-	data.attack_range = stats[4]
-	data.speed = stats[5]
-	data.engage_radius = stats[6]
-	data.chase_radius = stats[7]
-	data.will = stats[8]
+	return load("res://data/units/%s.tres" % unit_type) as UnitData
+
+
+## A test-local copy of a unit's data without one ability (docs/TESTS.md, e.g. T20).
+static func without_ability(unit_type: StringName, ability: StringName) -> UnitData:
+	var data := unit_data(unit_type).duplicate() as UnitData
+	var abilities: Array[StringName] = data.abilities.duplicate()
+	abilities.erase(ability)
+	data.abilities = abilities
 	return data
+
+
+## A unit outside any World, for function-level tests: IDs must follow the snapshot order.
+static func unit(id: int, unit_type: StringName, faction: SimUnit.Faction, cell: Vector2i) -> SimUnit:
+	return SimUnit.new(id, unit_data(unit_type), faction, SimMap.cell_center(cell), rules().tick_rate)

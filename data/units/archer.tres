@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/sim/unit_data.gd" id="1_unit"]
+
+[resource]
+script = ExtResource("1_unit")
+unit_type = &"archer"
+cost = 300
+max_hp = 35
+damage = 8
+attack_interval = 1.5
+attack_range = 6.0
+speed = 1.8
+engage_radius = 7.0
+chase_radius = 4.0
+will = &"HoldGroundWill"
+abilities = Array[StringName]([&"PointBlankPenalty"])

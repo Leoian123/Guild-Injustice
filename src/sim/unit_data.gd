@@ -18,6 +18,8 @@ extends Resource
 @export var chase_radius: float = 0.0
 ## Will component name (GDD §6.8): HoldGroundWill, HungerWill or NecroBoundWill.
 @export var will: StringName = &""
+## Ability component names (GDD §7, §8).
+@export var abilities: Array[StringName] = []
 
 
 ## Seconds to ticks: round(seconds × tick rate), at least 1 (GDD §6.1).

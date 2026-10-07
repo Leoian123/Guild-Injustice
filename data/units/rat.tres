@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="UnitData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/sim/unit_data.gd" id="1_unit"]
+
+[resource]
+script = ExtResource("1_unit")
+unit_type = &"rat"
+cost = 158
+max_hp = 20
+damage = 3
+attack_interval = 0.8
+attack_range = 1.0
+speed = 3.0
+engage_radius = 4.0
+chase_radius = 0.0
+will = &"HungerWill"
+abilities = Array[StringName]([&"WanderBehavior", &"BreedAbility"])
