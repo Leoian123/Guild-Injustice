@@ -308,7 +308,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 ### D-033 · Fine battaglia e scenario anticipati da M6 a M5
 - Sezione GDD: §3, §9; `docs/MILESTONES.md` M5 e M6
 - Ambiguità: il collaudo di M5 chiede "una partita completa", che richiede la fine della battaglia (§3) e le unità nemiche dello scenario (§9), pianificate per M6.
-- Scelta: in M5 entrano la fase 8 (vittoria, annientamento, furto, tempo, timer della reliquia con l'evento `relic_timer_reset`), `ScenarioData` con `data/scenarios/temple_01.tres`, l'estrazione delle varianti (Blitz, poi Caccia, con l'RNG del mondo) e i test T12, T13, T15. Restano a M6 `tools/sim.sh` completo (validazione con codice 2, `by_variant`, JSON Lines, riepilogo del batch), T01 e il report di bilanciamento. Le regole non cambiano: cambia solo quando vengono implementate.
+- Scelta: in M5 entrano la fase 8 (vittoria, annientamento, furto, tempo, timer della reliquia con l'evento `relic_timer_reset`), `ScenarioData` con `data/scenarios/temple_01.tres`, l'estrazione delle varianti (Blitz, poi Caccia, con l'RNG del mondo) e i test T12, T13, T15. Restano a M6 `tools/sim.sh` completo (validazione con codice 2, `by_variant`, JSON Lines, riepilogo del batch), T01 e il report di bilanciamento. Le regole non cambiano: cambia solo quando vengono implementate. T15 oggi usa `SimScenario.create_world`; in M6 va ricollegato all'API di `tools/sim.sh`, come chiede il suo livello "Simulazione".
 - Alternative: chiudere M5 con un collaudo parziale, senza fine battaglia.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
