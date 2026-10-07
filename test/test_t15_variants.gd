@@ -6,11 +6,12 @@ func test_T15_variants() -> void:
 	var scenario := SimScenario.load_scenario(&"temple_01")
 	var rules := SimScenario.load_rules()
 	var seen: Dictionary = {}
+	# Same API as tools/sim.sh (SimRunner): only the variant roll.
 	for seed_value: int in range(1, 41):
-		var first := SimScenario.create_world(scenario, rules, seed_value)
-		var again := SimScenario.create_world(scenario, rules, seed_value)
-		var combination := "%s-%s" % [first.blitz_variant, first.hunt_variant]
-		assert_str("%s-%s" % [again.blitz_variant, again.hunt_variant]).is_equal(combination)
+		var first := SimRunner.roll_variants(scenario, rules, seed_value)
+		var again := SimRunner.roll_variants(scenario, rules, seed_value)
+		var combination := "%s-%s" % [first["blitz"], first["hunt"]]
+		assert_str("%s-%s" % [again["blitz"], again["hunt"]]).is_equal(combination)
 		seen[combination] = true
 	assert_array(seen.keys()).contains_exactly_in_any_order(["A-A", "A-B", "B-A", "B-B"])
 
