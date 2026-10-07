@@ -1,11 +1,16 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
-[ext_resource type="Script" path="res://src/ui/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://src/ui/game_controller.gd" id="1_game"]
 [ext_resource type="Script" path="res://src/view/map_view.gd" id="2_map_view"]
+[ext_resource type="Script" path="res://src/view/world_view.gd" id="3_world_view"]
 
 [node name="Main" type="Node2D"]
-script = ExtResource("1_main")
+script = ExtResource("1_game")
+cell_size_px = 16
 
 [node name="MapView" type="Node2D" parent="."]
 script = ExtResource("2_map_view")
 cell_size_px = 16
+
+[node name="WorldView" type="Node2D" parent="."]
+script = ExtResource("3_world_view")

@@ -304,3 +304,26 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: (a) punto alle spalle a mezza cella invece di 1, con una costante `BACKSTAB_APPROACH` = 0,5: margine sufficiente anche contro il nemico più veloce, il servo a 0,15 celle per tick; (b) il ladro si ferma sul punto alle spalle solo se ci arriva entro la portata dopo il movimento di tutti (richiede di anticipare il movimento del bersaglio); (c) lasciare così.
 - Cambia l'esito di una battaglia: sì
 - Stato: decisa dall'umano (7 ottobre 2026) con una regola diversa dalle alternative: contro un bersaglio in movimento (stato `MOVE` o `FLEE`) il ladro gli va addosso e colpisce appena è a portata, anche di fronte, poi torna a riposizionarsi; contro un bersaglio fermo si posiziona prima alle spalle (GDD §7, T34). "In movimento" si legge dallo stato del bersaglio, cioè dal suo ultimo movimento: se il bersaglio ha un ID più alto, nella fase 3 il ladro vede lo stato del tick precedente.
+
+### D-033 · Fine battaglia e scenario anticipati da M6 a M5
+- Sezione GDD: §3, §9; `docs/MILESTONES.md` M5 e M6
+- Ambiguità: il collaudo di M5 chiede "una partita completa", che richiede la fine della battaglia (§3) e le unità nemiche dello scenario (§9), pianificate per M6.
+- Scelta: in M5 entrano la fase 8 (vittoria, annientamento, furto, tempo, timer della reliquia con l'evento `relic_timer_reset`), `ScenarioData` con `data/scenarios/temple_01.tres`, l'estrazione delle varianti (Blitz, poi Caccia, con l'RNG del mondo) e i test T12, T13, T15. Restano a M6 `tools/sim.sh` completo (validazione con codice 2, `by_variant`, JSON Lines, riepilogo del batch), T01 e il report di bilanciamento. Le regole non cambiano: cambia solo quando vengono implementate.
+- Alternative: chiudere M5 con un collaudo parziale, senza fine battaglia.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-034 · Dettagli dell'interfaccia e dello schieramento
+- Sezione GDD: §2, §5.1, §11
+- Ambiguità: dettagli che il GDD non fissa.
+- Scelta:
+  - La rivelazione è centrata sul centro della cella cliccata. Le quattro strategie di riferimento risultano valide con questa lettura in tutte le combinazioni (test `test_reference_strategies_are_valid`).
+  - Gli indicatori di minaccia esistono solo nella nebbia: un indicatore sparisce quando la sua cella diventa visibile, per non coprire le unità.
+  - Dopo la terza rivelazione lo schieramento parte da solo; si può passare allo schieramento anche prima, con "Fine ricognizione".
+  - Lo schieramento accetta più unità sulla stessa cella (le unità non si bloccano, §6.3); il clic destro toglie l'ultima unità piazzata su quella cella e restituisce il costo.
+  - "Via!" richiede almeno un'unità.
+  - Il seed di una nuova partita viene dall'orologio ed è mostrato a schermo; "Rigioca" ripete lo stesso seed.
+  - Il riepilogo divide le perdite per tipo e conta a parte i nemici rianimati uccisi.
+- Alternative: rivelazione sull'angolo della cella; indicatori sempre visibili.
+- Cambia l'esito di una battaglia: no (la rivelazione centrata è la lettura confermata dalle strategie; il resto è interfaccia)
+- Stato: confermata
