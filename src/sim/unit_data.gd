@@ -14,6 +14,10 @@ extends Resource
 @export var speed: float = 0.0
 ## Cells.
 @export var engage_radius: float = 0.0
+## Cells from the deployment point a HoldGroundWill unit dares to chase (GDD §6.8).
+@export var chase_radius: float = 0.0
+## Will component name (GDD §6.8): HoldGroundWill, HungerWill or NecroBoundWill.
+@export var will: StringName = &""
 
 
 ## Seconds to ticks: round(seconds × tick rate), at least 1 (GDD §6.1).

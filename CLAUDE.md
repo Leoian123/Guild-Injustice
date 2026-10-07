@@ -38,6 +38,7 @@ Leggi le sezioni del GDD che servono al compito corrente, non tutto il documento
 Unità: `rat` `goblin` `archer` `thief` `paladin` · `servant` `undead` `revenant` `necromancer`.
 Stati: `IDLE` `MOVE` `ATTACK` `FLEE` `DEAD`. Fazioni: `PLAYER` `ENEMY`. Gruppi: `blitz` `hunt`.
 Abilità: `WanderBehavior` `BreedAbility` `PackCourageAbility` `PointBlankPenalty` `BackstabAbility` `ArmorAbility` `ReanimateAbility` `FearlessTrait`.
+Volontà: `HoldGroundWill` `HungerWill` `NecroBoundWill`.
 Non inventare sinonimi.
 
 ## Decidere o chiedere

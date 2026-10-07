@@ -91,25 +91,49 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 - **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
 
 ### 6.6 Comportamento senza bersaglio
-- **Unità del giocatore** (tranne i ratti): tornano al punto di schieramento e lo tengono. Inseguono un bersaglio solo entro `LEASH_RADIUS` dal punto di schieramento: se per raggiungerlo dovrebbero uscirne, lo abbandonano e tornano.
-- **Unità nemiche**: avanzano verso la reliquia e combattono ciò che notano lungo la strada. Nessun limite di inseguimento.
+- **Unità del giocatore** (tranne i ratti): tornano al punto di schieramento e lo tengono.
+- **Ratti**: vagano (§7).
+- **Unità nemiche**: avanzano verso la reliquia.
+- Quali bersagli un'unità accetta di inseguire lo decide la sua volontà (§6.8).
 
 ### 6.7 Morte e cadaveri
 - Un cadavere resta per `CORPSE_TICKS` tick nella posizione della morte.
 - Un'unità rianimata, quando muore, non lascia cadavere.
 
+### 6.8 Volontà di combattere
+Ogni unità ha esattamente un componente di volontà. La volontà decide quali nemici notati (§6.4) l'unità accetta come bersaglio. Un bersaglio che la volontà non accetta più viene abbandonato subito, come uno non più notato. La scelta fra i bersagli accettati segue la regola comune del §6.4.
+
+| Componente | Unità | Bersagli accettati |
+|---|---|---|
+| `HoldGroundWill` | `goblin` `archer` `thief` `paladin` | Nemici con `distanza(punto di schieramento, nemico) ≤ chase_radius + raggio d'attacco`, in linea d'aria. `chase_radius` è una statistica dell'unità (§7): il suo coraggio. |
+| `HungerWill` | `rat` del giocatore | Da affamato: qualunque nemico notato, senza limite. Da sazio: nessuno. |
+| `NecroBoundWill` | `servant` `undead` `revenant` `necromancer` e ogni rianimato | Entro `NECRO_INFLUENCE_RADIUS` da un `necromancer` vivo: qualunque nemico notato, senza limite (caccia). Fuori: solo i nemici già entro il proprio raggio d'attacco e quelli che contendono la reliquia, cioè entro `RELIC_CONTEST_RADIUS` dal suo centro (senza mente: non deviano, salvo per difendere il furto). |
+
+**Fame del ratto.** Ogni ratto parte affamato con `RAT_HUNGER_BITES` morsi. Ogni attacco messo a segno toglie un morso. Al morso che porta il conto a 0 il ratto diventa sazio per `RAT_DIGEST_TICKS` tick. Il timer scende nella fase 1; quando arriva a 0, nella stessa fase il ratto torna affamato con `RAT_HUNGER_BITES` morsi. Da sazio non ha bersaglio e vaga. Un ratto rianimato non ha fame: ha `NecroBoundWill`.
+
+**Influenza del necromante.** La distanza si misura dalla posizione dell'unità a quella del necromante vivo più vicino, senza bisogno di vista. Il necromante è sempre entro la propria influenza. Se tutti i necromanti muoiono, i non morti restano senza mente fino alla fine della battaglia. Con la volontà `FearlessTrait` non cambia: i non morti non fuggono mai.
+
+**Guinzaglio dell'influenza.** Nella fase 3 un'unità sotto influenza non fa un passo che la porterebbe oltre `NECRO_INFLUENCE_RADIUS` dal necromante vivo più vicino: se succederebbe, resta ferma in quel tick, mantenendo bersaglio e orientamento. Le unità si processano per ID crescente e il necromante ha un ID più basso dei suoi non morti, quindi si muove prima e i suoi non morti si regolano sulla sua nuova posizione. Il gruppo avanza compatto alla velocità del necromante. Il guinzaglio non trattiene chi è già fuori dall'influenza: resta senza mente finché non rientra nel raggio per conto suo.
+
+**Corpo a corpo e distanza (kiting).** Vale per tutte le unità, secondo il tipo di attacco:
+- **Corpo a corpo** (raggio d'attacco ≤ 1): ingaggia, cioè si avvicina al bersaglio finché è a portata e in vista (§6.3, §6.5).
+- **A distanza** (raggio d'attacco > 1): nella fase 3, se la ricarica dell'attacco è > 0 e c'è un nemico vivo entro `KITE_RADIUS`, l'unità arretra invece di muoversi altrimenti. Si sposta in linea retta, alla propria velocità, in direzione opposta al nemico vivo più vicino; a parità di distanza conta l'ID più basso. Il passo si annulla, e l'unità resta ferma, se la nuova posizione cade in una cella muro oppure, per un'unità con `HoldGroundWill`, se la porta oltre `chase_radius` dal punto di schieramento. Arretrando, l'orientamento diventa la direzione del movimento, quindi l'unità volta le spalle al nemico (§7, ladro).
+- **Eccezione del necromante**: arretra solo se non ha più non morti intorno, cioè nessun'altra unità viva con `NecroBoundWill` entro `NECRO_INFLUENCE_RADIUS`. Rianimati compresi. Finché il suo gruppo vive, tiene la posizione e lascia che siano i servi a proteggerlo.
+
 ## 7. Unità del giocatore
 Budget dello scenario: **2457**.
 
-| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Abilità |
-|---|---|---|---|---|---|---|---|---|---|
-| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | 3,0 | 4 | `WanderBehavior`, `BreedAbility` |
-| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | 2,5 | 5 | `PackCourageAbility` |
-| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | 1,8 | 7 | `PointBlankPenalty` |
-| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | 3,2 | 7 | `BackstabAbility` |
-| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | 1,2 | 4 | `ArmorAbility` |
+| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Vel. | Ingaggio | Insegue | Volontà | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | 3,0 | 4 | — | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | 2,5 | 5 | 6 | `HoldGroundWill` | `PackCourageAbility` |
+| Arciere | `archer` | 300 | 35 | 8 | 1,5 s | 6 | 1,8 | 7 | 4 | `HoldGroundWill` | `PointBlankPenalty` |
+| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | 3,2 | 7 | 8 | `HoldGroundWill` | `BackstabAbility` |
+| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | 1,2 | 4 | 5 | `HoldGroundWill` | `ArmorAbility` |
 
-**Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e ignorano il limite di inseguimento.
+"Insegue" è `chase_radius`, in celle (§6.8).
+
+**Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e inseguono finché hanno fame (§6.8).
 - *Vagabondaggio*: senza bersaglio, ogni `WANDER_PERIOD_TICKS` tick (dal proprio ultimo spostamento casuale) sceglie con l'RNG una cella calpestabile entro `WANDER_RADIUS` e ci va.
 - *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce in una cella calpestabile scelta con l'RNG entro 1 cella dal punto medio della coppia.
 
@@ -140,6 +164,8 @@ Budget dello scenario: **2457**.
 - Il rianimato ha vita, danno, tempi, raggi e velocità dell'unità originale, sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
 - Si comporta come un'unità nemica: avanza verso la reliquia.
 
+**Volontà.** Ogni unità nemica ha `NecroBoundWill` (§6.8), compresi i rianimati: la volontà non è un'abilità, quindi il rianimato non la perde.
+
 **`FearlessTrait`**: l'unità non entra mai in `FLEE`.
 
 ## 9. Scenario `temple_01`
@@ -163,7 +189,7 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 |---|---|---|---|---|
 | `TICK_RATE` | 20 | | `COURAGE_RADIUS` | 3,0 |
 | `RETARGET_TICKS` | 10 | | `COURAGE_MIN_ALLIES` | 2 |
-| `LEASH_RADIUS` | 6,0 | | `COURAGE_BONUS` | 0,3 |
+| `NECRO_INFLUENCE_RADIUS` | 8,0 | | `COURAGE_BONUS` | 0,3 |
 | `RELIC_ON_RADIUS` | 0,5 | | `FLEE_HP_RATIO` | 0,5 |
 | `RELIC_CONTEST_RADIUS` | 1,5 | | `FLEE_COOLDOWN_TICKS` | 100 |
 | `STEAL_TICKS` | 100 | | `POINT_BLANK_RADIUS` | 1,0 |
@@ -176,7 +202,8 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `WANDER_RADIUS` | 3,0 | | `REANIMATE_COOLDOWN_TICKS` | 120 |
 | `BREED_PERIOD_TICKS` | 100 | | `REANIMATE_RADIUS` | 6,0 |
 | `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
-| `NEWBORN_COOLDOWN_TICKS` | 100 | | | |
+| `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
+| `RAT_HUNGER_BITES` | 3 | | `RAT_DIGEST_TICKS` | 100 |
 
 ## 11. Contratto di `tools/sim.sh`
 Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cmdline_user_args()`).
@@ -208,7 +235,7 @@ SHA-256 (esadecimale) di un testo costruito così, una voce per riga:
 I float (posizioni `x y`, orientamento `fx fy`) sono scritti con 4 decimali; `target_id` è -1 se assente.
 
 ## 13. Fuori perimetro
-Gestione della gilda, run e progressione, archetipi del capo, sistema completo di paura/disciplina/avidità (qui solo codardia dei goblin e ratti incontrollati), interventi del giocatore in battaglia, altre mappe o fazioni, grafica e audio definitivi, salvataggi, determinismo tra piattaforme.
+Gestione della gilda, run e progressione, archetipi del capo, sistema completo di paura/disciplina/avidità (qui solo codardia dei goblin, ratti incontrollati e la volontà del §6.8), interventi del giocatore in battaglia, altre mappe o fazioni, grafica e audio definitivi, salvataggi, determinismo tra piattaforme.
 
 ## 14. Domande della fase
 1. Le 3 rivelazioni creano una scelta interessante? Misura: vittorie di `s1i` meno vittorie di `s1`, per combinazione.

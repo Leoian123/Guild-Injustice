@@ -32,6 +32,7 @@ func spawn_unit(data: UnitData, faction: SimUnit.Faction, position: Vector2) -> 
 	_next_id += 1
 	unit.facing = _initial_facing(faction, position)
 	units.append(unit)
+	unit.will.on_spawn(self, unit)
 	return unit
 
 
@@ -97,13 +98,6 @@ func notices(unit: SimUnit, other: SimUnit) -> bool:
 	return SimVision.has_line_of_sight(map, unit.position, other.position)
 
 
-## Player units chase only targets they can reach without leaving the leash (GDD §6.6, D-014).
-func within_leash(unit: SimUnit, other: SimUnit) -> bool:
-	if unit.faction != SimUnit.Faction.PLAYER:
-		return true
-	return unit.home.distance_to(other.position) <= rules.leash_radius + unit.attack_range
-
-
 # Player units face away from the relic (south on the relic cell); enemies face it (GDD §6.5).
 func _initial_facing(faction: SimUnit.Faction, position: Vector2) -> Vector2:
 	var to_relic := map.relic_position() - position
@@ -117,8 +111,11 @@ func _initial_facing(faction: SimUnit.Faction, position: Vector2) -> Vector2:
 # Phase 1: timers and cooldowns. Flee enter/exit arrives with the goblin in M4.
 func _phase_states() -> void:
 	for unit: SimUnit in units:
-		if unit.is_alive() and unit.attack_cd > 0:
+		if not unit.is_alive():
+			continue
+		if unit.attack_cd > 0:
 			unit.attack_cd -= 1
+		unit.will.on_tick_start(self, unit)
 	var kept: Array[SimCorpse] = []
 	for corpse: SimCorpse in corpses:
 		corpse.ttl -= 1
@@ -148,7 +145,7 @@ func _phase_targets() -> void:
 
 
 func _is_valid_target(unit: SimUnit, other: SimUnit) -> bool:
-	return notices(unit, other) and within_leash(unit, other)
+	return notices(unit, other) and unit.will.accepts(self, unit, other)
 
 
 # Nearest noticed enemy; ties: less HP, then lower ID (iteration is by ascending ID).
@@ -165,26 +162,66 @@ func _choose_target(unit: SimUnit) -> int:
 	return best.id if best != null else SimUnit.NO_TARGET
 
 
-# Phase 3: movement along A* at speed / TICK_RATE cells per tick (GDD §6.3, §6.6).
+# Phase 3: movement along A* at speed / TICK_RATE cells per tick (GDD §6.3, §6.6, §6.8).
 func _phase_movement() -> void:
 	for unit: SimUnit in units:
 		if not unit.is_alive() or not unit.ai_enabled:
 			continue
 		var target := get_unit(unit.target_id)
-		var destination: Vector2
+		var threat := _kite_threat(unit)
+		if threat != null:
+			# Backing away replaces any other movement, even when the step is refused.
+			if _kite_step(unit, threat):
+				unit.state = SimUnit.State.MOVE
+			else:
+				unit.state = SimUnit.State.ATTACK if target != null else SimUnit.State.IDLE
+			continue
+		var destination: Variant = null
 		if target != null:
 			if _can_attack(unit, target.position):
 				unit.state = SimUnit.State.ATTACK
 				continue
 			destination = target.position
-		elif unit.faction == SimUnit.Faction.ENEMY:
-			destination = map.relic_position()
 		else:
-			destination = unit.home
-		if _move_towards(unit, destination):
+			destination = unit.will.idle_destination(self, unit)
+		if destination != null and _move_towards(unit, destination):
 			unit.state = SimUnit.State.MOVE
 		else:
 			unit.state = SimUnit.State.IDLE
+
+
+# A ranged unit reloading backs away from the nearest living enemy within KITE_RADIUS (GDD §6.8).
+func _kite_threat(unit: SimUnit) -> SimUnit:
+	if unit.attack_range <= 1.0 or unit.attack_cd == 0 or not unit.will.may_kite(self, unit):
+		return null
+	var nearest: SimUnit = null
+	var nearest_distance: float = 0.0
+	for other: SimUnit in units:
+		if not other.is_alive() or not unit.is_enemy_of(other):
+			continue
+		var distance := unit.position.distance_to(other.position)
+		if distance > rules.kite_radius:
+			continue
+		if nearest == null or distance < nearest_distance:
+			nearest = other
+			nearest_distance = distance
+	return nearest
+
+
+# Straight step away from the threat; refused on walls or when the will forbids it.
+func _kite_step(unit: SimUnit, threat: SimUnit) -> bool:
+	var away := unit.position - threat.position
+	if away.is_zero_approx():
+		return false
+	var heading := away.normalized()
+	var position := unit.position + heading * unit.speed_per_tick
+	if map.is_wall(Vector2i(position.floor())):
+		return false
+	if not unit.will.allows_kite_step(self, unit, position) or not unit.will.allows_step(self, unit, position):
+		return false
+	unit.position = position
+	unit.facing = heading
+	return true
 
 
 func _can_attack(unit: SimUnit, target_position: Vector2) -> bool:
@@ -227,6 +264,8 @@ func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
 			break
 	if heading == Vector2.ZERO:
 		return false
+	if not unit.will.allows_step(self, unit, position):
+		return false
 	unit.position = position
 	unit.facing = heading
 	return true
@@ -256,6 +295,7 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 		if not to_target.is_zero_approx():
 			unit.facing = to_target.normalized()
 		unit.attack_cd = unit.attack_interval_ticks
+		unit.will.on_attack_landed(self, unit)
 		if unit.ai_enabled:
 			unit.state = SimUnit.State.ATTACK
 

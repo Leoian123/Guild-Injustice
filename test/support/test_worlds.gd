@@ -54,13 +54,15 @@ static func spawn(world_value: World, unit_type: StringName, faction: SimUnit.Fa
 
 
 ## Starting stats from GDD §7–§8, built in the test until data/units exists (M4).
-## Columns: cost, HP, damage, attack interval (s), attack range, speed, engage radius.
+## Columns: cost, HP, damage, attack interval (s), attack range, speed, engage radius, chase radius, will.
 const GDD_STATS: Dictionary = {
-	&"goblin": [254, 45, 7, 1.0, 1.0, 2.5, 5.0],
-	&"archer": [300, 35, 8, 1.5, 6.0, 1.8, 7.0],
-	&"paladin": [1900, 400, 25, 1.4, 1.0, 1.2, 4.0],
-	&"servant": [0, 30, 5, 1.0, 1.0, 3.0, 5.0],
-	&"undead": [0, 80, 8, 1.3, 1.0, 1.5, 4.0],
+	&"rat": [158, 20, 3, 0.8, 1.0, 3.0, 4.0, 0.0, &"HungerWill"],
+	&"goblin": [254, 45, 7, 1.0, 1.0, 2.5, 5.0, 6.0, &"HoldGroundWill"],
+	&"archer": [300, 35, 8, 1.5, 6.0, 1.8, 7.0, 4.0, &"HoldGroundWill"],
+	&"paladin": [1900, 400, 25, 1.4, 1.0, 1.2, 4.0, 5.0, &"HoldGroundWill"],
+	&"servant": [0, 30, 5, 1.0, 1.0, 3.0, 5.0, 0.0, &"NecroBoundWill"],
+	&"undead": [0, 80, 8, 1.3, 1.0, 1.5, 4.0, 0.0, &"NecroBoundWill"],
+	&"necromancer": [0, 120, 10, 2.0, 5.0, 1.3, 6.0, 0.0, &"NecroBoundWill"],
 }
 
 
@@ -75,4 +77,6 @@ static func unit_data(unit_type: StringName) -> UnitData:
 	data.attack_range = stats[4]
 	data.speed = stats[5]
 	data.engage_radius = stats[6]
+	data.chase_radius = stats[7]
+	data.will = stats[8]
 	return data

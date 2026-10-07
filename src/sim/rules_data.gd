@@ -4,7 +4,10 @@ extends Resource
 
 @export var tick_rate: int = 0
 @export var retarget_ticks: int = 0
-@export var leash_radius: float = 0.0
+@export var necro_influence_radius: float = 0.0
+@export var kite_radius: float = 0.0
+@export var rat_hunger_bites: int = 0
+@export var rat_digest_ticks: int = 0
 @export var relic_on_radius: float = 0.0
 @export var relic_contest_radius: float = 0.0
 @export var steal_ticks: int = 0

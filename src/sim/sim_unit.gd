@@ -24,6 +24,9 @@ var attack_range: float = 0.0
 ## Cells per tick.
 var speed_per_tick: float = 0.0
 var engage_radius: float = 0.0
+var chase_radius: float = 0.0
+## Will to fight (GDD §6.8), one instance per unit.
+var will: SimWill
 
 ## Deployment point; player units return here without a target (GDD §6.6).
 var home: Vector2 = Vector2.ZERO
@@ -46,6 +49,8 @@ func _init(p_id: int, p_data: UnitData, p_faction: Faction, p_position: Vector2,
 	attack_range = p_data.attack_range
 	speed_per_tick = p_data.speed / tick_rate
 	engage_radius = p_data.engage_radius
+	chase_radius = p_data.chase_radius
+	will = SimWill.create(p_data.will)
 	position = p_position
 	home = p_position
 

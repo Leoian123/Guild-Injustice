@@ -6,7 +6,10 @@
 script = ExtResource("1_rules")
 tick_rate = 20
 retarget_ticks = 10
-leash_radius = 6.0
+necro_influence_radius = 8.0
+kite_radius = 2.0
+rat_hunger_bites = 3
+rat_digest_ticks = 100
 relic_on_radius = 0.5
 relic_contest_radius = 1.5
 steal_ticks = 100
