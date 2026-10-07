@@ -143,7 +143,7 @@ Budget dello scenario: **2457**.
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | `HungerWill` | `WanderBehavior`, `BreedAbility` |
 | Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | sì | `HoldGroundWill` | `PackCourageAbility` |
-| Arciere | `archer` | 300 | 35 | 16 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | `HoldGroundWill` | `PointBlankPenalty` |
+| Arciere | `archer` | 300 | 35 | 12 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | `HoldGroundWill` | `PointBlankPenalty` |
 | Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | sì | `HoldGroundWill` | `BackstabAbility` |
 | Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | sì | `HoldGroundWill` | `ArmorAbility` |
 

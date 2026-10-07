@@ -44,7 +44,7 @@ func test_T16_rounding() -> void:
 
 	var archer := TestWorlds.unit(1, &"archer", PLAYER, Vector2i(5, 5))
 	var close_enemy := TestWorlds.unit(2, &"servant", ENEMY, Vector2i(6, 5))
-	assert_int(_damage(archer, close_enemy, [archer, close_enemy])).is_equal(8)
+	assert_int(_damage(archer, close_enemy, [archer, close_enemy])).is_equal(6)
 
 
 func _damage(attacker: SimUnit, target: SimUnit, units: Array[SimUnit]) -> int:
