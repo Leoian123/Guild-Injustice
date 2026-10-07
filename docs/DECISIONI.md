@@ -383,3 +383,11 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: nessuna rilevante.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-040 · Chiusura di M5 e M5.1 con il collaudo
+- Sezione GDD: §2, §14.5; `docs/MILESTONES.md` M5, M5.1
+- Ambiguità: nessuna.
+- Scelta: l'umano ha giocato una partita completa con il mouse (7 ottobre 2026). M5 e M5.1 sono chiuse. Impressione registrata per la domanda §14.5: "mi sembra strana ancora la vibe, ma magari è solo perché è incompleta". Da riconsiderare dopo il report di bilanciamento di M6 e quando l'interfaccia mostrerà di più (colpi, stati, Δ-15). Restano aperte le due interpretazioni di D-038.
+- Alternative: nessuna.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
