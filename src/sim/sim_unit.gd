@@ -1,5 +1,5 @@
 class_name SimUnit
-extends RefCounted
+extends SimState
 ## Runtime state of one unit. Values are copied from UnitData at creation.
 
 enum Faction { PLAYER, ENEMY }

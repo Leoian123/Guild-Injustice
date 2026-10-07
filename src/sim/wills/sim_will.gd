@@ -1,5 +1,5 @@
 class_name SimWill
-extends RefCounted
+extends SimState
 ## Will to fight (GDD §6.8): decides which noticed enemies a unit accepts as target,
 ## where it goes without a target and how far it lets itself be pulled.
 ## One instance per unit: wills may keep per-unit state.

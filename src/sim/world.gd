@@ -1,5 +1,5 @@
 class_name World
-extends RefCounted
+extends SimState
 ## Deterministic fixed-tick simulation (GDD §6.2, §12).
 
 var rules: RulesData
@@ -55,38 +55,14 @@ func step() -> void:
 	tick += 1
 
 
+## SHA-256 of the world's self-description (GDD §12).
 func state_hash() -> String:
-	var lines: PackedStringArray = []
-	lines.append("tick=%d" % tick)
-	lines.append("relic_timer=%d" % relic_timer)
-	lines.append("rng_state=%d" % rng.state)
-	for unit: SimUnit in units:
-		lines.append("%d|%s|%s|%s|%d|%s|%s|%s|%s|%d|%d" % [
-			unit.id,
-			unit.unit_type,
-			SimUnit.Faction.keys()[unit.faction],
-			SimUnit.State.keys()[unit.state],
-			unit.hp,
-			_fmt(unit.position.x),
-			_fmt(unit.position.y),
-			_fmt(unit.facing.x),
-			_fmt(unit.facing.y),
-			unit.target_id,
-			unit.attack_cd,
-		])
-	for corpse: SimCorpse in corpses:
-		lines.append("corpse|%d|%s|%s|%s|%d" % [
-			corpse.unit_id,
-			corpse.unit_type,
-			_fmt(corpse.position.x),
-			_fmt(corpse.position.y),
-			corpse.ttl,
-		])
-	return ("\n".join(lines) + "\n").sha256_text()
+	return describe().sha256_text()
 
 
-static func _fmt(value: float) -> String:
-	return "%.4f" % value
+# Fixed inputs, data derived from them and the per-tick damage buffer are not state.
+func hash_excluded() -> PackedStringArray:
+	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage"])
 
 
 ## A unit notices living enemies within its engage radius and in sight (GDD §6.4).

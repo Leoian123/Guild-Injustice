@@ -10,6 +10,7 @@ Autobattler tattico dark fantasy in Godot 4. Il giocatore esplora con 3 rivelazi
 - Milestone e criteri di accettazione: `docs/MILESTONES.md`
 - Test di regola con valori attesi: `docs/TESTS.md`
 - Decisioni prese e domande aperte: `docs/DECISIONI.md`
+- Scelte di comodo da rivedere rispetto alla visione finale: `docs/DELTA.md`. Ogni nuova scorciatoia si registra lì quando la si prende, e il report di fine milestone elenca le voci aggiunte o cambiate.
 - Versioni di Godot e GdUnit4 in uso: `docs/VERSIONI.md`
 - Mappa: `data/maps/temple_01.txt` · Strategie di riferimento: `tools/strategies/`
 

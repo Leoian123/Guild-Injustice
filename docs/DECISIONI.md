@@ -40,7 +40,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: righe unite da `\n` con `\n` finale, SHA-256 esadecimale minuscolo (`String.sha256_text()`). Fazione e stato con i nomi canonici (`PLAYER`, `IDLE`, …), tipo con l'ID canonico (`paladin`). Float con `%.4f`.
 - Alternative: numeri degli enum; nessun `\n` finale.
 - Cambia l'esito di una battaglia: no
-- Stato: confermata
+- Stato: superata da D-024 (GDD §12 riscritto il 7 ottobre 2026: ogni entità descrive sé stessa).
 
 ### D-003 · Nomi e tipi in `data/rules.tres`
 - Sezione GDD: §10
@@ -214,4 +214,12 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: il formato resta quello del §12, fonte di verità. Il determinismo non cambia: ogni campo escluso dipende solo da input e seed. L'hash è solo meno sensibile a una divergenza che non tocca ancora vita, posizione o bersaglio, e che di norma si vede nei tick successivi.
 - Alternative: aggiungere al §12 una riga per i campi di volontà (`will|id|…`), con modifica del GDD.
 - Cambia l'esito di una battaglia: no
-- Stato: confermata (da segnalare all'umano: la regola e il §12 si contraddicono)
+- Stato: superata da D-024 (umano, 7 ottobre 2026: l'hash deve contenere tutto ciò che determina il comportamento).
+
+### D-024 · Lo `state_hash` come autodescrizione delle entità
+- Sezione GDD: §12 (riscritto su richiesta dell'umano)
+- Ambiguità: come garantire che ogni campo di stato, presente e futuro, entri nell'hash.
+- Scelta: `SimState` (`src/sim/sim_state.gd`) è la base di `World`, `SimUnit`, `SimWill` e `SimCorpse`. `describe()` scrive tutte le variabili dello script nell'ordine di dichiarazione, con il nome, e scende nelle entità annidate e negli array. Un tipo che non sa scrivere è un errore (`push_error`, quindi gate rosso), mai un campo saltato. `World` esclude solo `rules`, `map`, `pathfinder` e `_pending_damage`. I valori sono scritti con `var_to_str`, quindi i float sono esatti. `test/test_state_hash_completeness.gd` cambia ogni campo di ogni tipo di entità e verifica che l'hash cambi; ho controllato che fallisca rompendo apposta la scrittura dei vettori. La descrizione è anche uno strumento di debug: se due simulazioni divergono, il confronto dei due testi mostra il campo.
+- Alternative: elenco fisso di campi nel GDD (D-002, superata); ECS (escluso da `CLAUDE.md`, vedi Δ-01).
+- Cambia l'esito di una battaglia: no
+- Stato: confermata

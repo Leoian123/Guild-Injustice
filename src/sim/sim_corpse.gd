@@ -1,5 +1,5 @@
 class_name SimCorpse
-extends RefCounted
+extends SimState
 ## A corpse left by a dead unit (GDD §6.7).
 
 var unit_id: int = 0

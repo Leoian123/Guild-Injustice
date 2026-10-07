@@ -227,12 +227,11 @@ Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cm
 Il riepilogo del batch riporta vittorie/partite in totale e per combinazione di varianti.
 
 ## 12. `state_hash`
-SHA-256 (esadecimale) di un testo costruito così, una voce per riga:
-1. `tick=<n>`, `relic_timer=<n>`, `rng_state=<rng.state>`;
-2. per ogni unità, viva o morta, in ordine di ID: `id|type|faction|state|hp|x|y|fx|fy|target_id|attack_cd`;
-3. per ogni cadavere, in ordine di ID dell'unità: `corpse|id|type|x|y|ttl`.
+**Principio**: l'hash contiene **tutto** ciò che può influenzare un tick successivo. Due simulazioni con lo stesso hash si comportano in modo identico da quel momento in poi.
 
-I float (posizioni `x y`, orientamento `fx fy`) sono scritti con 4 decimali; `target_id` è -1 se assente.
+**Ogni entità descrive sé stessa.** Mondo, unità, volontà, cadaveri, e in futuro abilità e potenziamenti, sono entità di stato. Ognuna produce la propria descrizione con tutti i suoi campi, nell'ordine in cui sono dichiarati, e include le descrizioni delle entità che contiene: il mondo contiene unità e cadaveri in ordine di ID, l'unità contiene la sua volontà. Un campo nuovo entra nell'hash da solo. Si esclude un campo solo dichiarandolo, e solo se non è stato della battaglia: regole e mappa (input fissi), dati derivati da essi, buffer azzerati a ogni tick.
+
+`state_hash` = SHA-256 (esadecimale) della descrizione del mondo. I valori sono scritti in forma esatta: float e vettori senza arrotondamento, booleani `1`/`0`, enum come numero, l'RNG con il suo `state`. Un test di guardia cambia un campo alla volta di ogni tipo di entità e verifica che l'hash cambi.
 
 ## 13. Fuori perimetro
 Gestione della gilda, run e progressione, archetipi del capo, sistema completo di paura/disciplina/avidità (qui solo codardia dei goblin, ratti incontrollati e la volontà del §6.8), interventi del giocatore in battaglia, altre mappe o fazioni, grafica e audio definitivi, salvataggi, determinismo tra piattaforme.
