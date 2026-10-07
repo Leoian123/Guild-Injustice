@@ -9,6 +9,9 @@ var rng: RandomNumberGenerator
 ## Index of the next tick to run. Ticks are numbered from 0 (GDD §6.1).
 var tick: int = 0
 var relic_timer: int = 0
+## Scenario variants rolled at creation (GDD §9): "A" or "B", empty in test worlds.
+var blitz_variant: String = ""
+var hunt_variant: String = ""
 ## Battle outcome (GDD §3): "" while running, then "win" or "lose".
 var result: String = ""
 ## enemies_dead, player_dead, relic_stolen or timeout (GDD §11).
