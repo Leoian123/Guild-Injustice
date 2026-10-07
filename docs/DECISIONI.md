@@ -367,7 +367,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: (1) vita = integrità del cadavere × `INTEGRITY_HP`, prima del punto tolto; il rianimato ha integrità − 1. Con l'altra lettura un goblin (integrità 1) si rialzerebbe con 0 di vita. (2) Il necromante sceglie il cadavere con l'integrità più alta, cioè quello che darà il rianimato con più vita, coerente con "scudi di carne".
 - Alternative: (1) vita = (integrità − 1) × 25; (2) scegliere ancora per vita massima originale.
 - Cambia l'esito di una battaglia: sì
-- Stato: da confermare
+- Stato: confermata (umano, 7 ottobre 2026: vita del rianimato sull'integrità prima del punto tolto; scelta per integrità)
 
 ### D-039 · Dettagli dello spazzino e delle guardie nella stanza
 - Sezione GDD: §6.7, §6.8, §7, §4
