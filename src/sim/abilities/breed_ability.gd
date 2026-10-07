@@ -34,5 +34,7 @@ static func run_breeding(world: World) -> void:
 			if cells.is_empty():
 				continue
 			var cell := cells[world.rng.randi_range(0, cells.size() - 1)]
-			world.spawn_newborn(first.data, first.faction, SimMap.cell_center(cell))
+			var newborn := world.spawn_newborn(first.data, first.faction, SimMap.cell_center(cell))
+			# Test mode (docs/TESTS.md): a newborn of AI-off parents stays AI-off. Always true in play.
+			newborn.ai_enabled = first.ai_enabled
 			rat_count += 1
