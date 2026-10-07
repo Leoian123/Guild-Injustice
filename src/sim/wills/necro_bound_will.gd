@@ -11,8 +11,8 @@ static func is_necromancer(unit: SimUnit) -> bool:
 
 ## True if a living allied necromancer is within the influence radius of `position`.
 static func influences(world: World, unit: SimUnit, position: Vector2) -> bool:
-	for other: SimUnit in world.units:
-		if other.is_alive() and other.faction == unit.faction and is_necromancer(other):
+	for other: SimUnit in world.necromancers:
+		if other.is_alive() and other.faction == unit.faction:
 			if other.position.distance_to(position) <= world.rules.necro_influence_radius:
 				return true
 	return false

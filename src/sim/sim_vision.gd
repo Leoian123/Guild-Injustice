@@ -5,10 +5,25 @@ extends RefCounted
 ## the corner shared by two diagonal cells also touches the other two cells at that corner.
 
 
+## Same cells as touched_cells(), checked as they are found: stops at the first wall.
 static func has_line_of_sight(map: SimMap, from: Vector2, to: Vector2) -> bool:
-	for cell: Vector2i in touched_cells(from, to):
-		if map.is_wall(cell):
-			return false
+	var min_x: float = minf(from.x, to.x)
+	var max_x: float = maxf(from.x, to.x)
+	for column: int in range(ceili(min_x) - 1, floori(max_x) + 1):
+		var x_low: float = maxf(min_x, float(column))
+		var x_high: float = minf(max_x, float(column + 1))
+		if x_low > x_high:
+			continue
+		var y_low: float = minf(from.y, to.y)
+		var y_high: float = maxf(from.y, to.y)
+		if from.x != to.x:
+			var y_a: float = _y_at(from, to, x_low)
+			var y_b: float = _y_at(from, to, x_high)
+			y_low = minf(y_a, y_b)
+			y_high = maxf(y_a, y_b)
+		for row: int in range(ceili(y_low) - 1, floori(y_high) + 1):
+			if map.is_wall(Vector2i(column, row)):
+				return false
 	return true
 
 

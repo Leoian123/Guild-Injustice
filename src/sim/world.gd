@@ -29,6 +29,10 @@ var corpses: Array[SimCorpse] = []
 var events: Array[Dictionary] = []
 
 var _next_id: int = 1
+## Living units of each faction at the start of phase 2, in ID order (a per-tick buffer).
+var _alive_by_faction: Array = [[], []]
+## Necromancers among `units`, in ID order: an index for the influence checks (GDD §6.8).
+var necromancers: Array[SimUnit] = []
 ## Cells occupied by living units of each faction at the start of phase 3, for paths (GDD §6.3).
 var _occupied: Array[Dictionary] = [{}, {}]
 ## Whether the last _move_towards had to ignore enemy units to find a path.
@@ -92,6 +96,8 @@ func _add_unit(unit: SimUnit) -> SimUnit:
 	_next_id += 1
 	unit.facing = _initial_facing(unit.faction, unit.position)
 	units.append(unit)
+	if NecroBoundWill.is_necromancer(unit):
+		necromancers.append(unit)
 	unit.will.on_spawn(self, unit)
 	return unit
 
@@ -160,7 +166,7 @@ func state_hash() -> String:
 
 # Fixed inputs, data derived from them and the per-tick damage buffer are not state.
 func hash_excluded() -> PackedStringArray:
-	return PackedStringArray(["rules", "map", "pathfinder", "relic_room", "_pending_damage", "events",
+	return PackedStringArray(["rules", "map", "pathfinder", "relic_room", "necromancers", "_alive_by_faction", "_pending_damage", "events",
 		"_occupied", "_last_path_ignored_units"])
 
 
@@ -202,8 +208,13 @@ func _phase_states() -> void:
 	corpses = kept
 
 
-# Phase 2: target selection (GDD §6.4).
+# Phase 2: target selection (GDD §6.4). Nobody moves or dies in this phase, so the living
+# units of each faction are listed once, in ID order, as the only possible targets.
 func _phase_targets() -> void:
+	_alive_by_faction = [[], []]
+	for unit: SimUnit in units:
+		if unit.is_alive():
+			_alive_by_faction[unit.faction].append(unit)
 	for unit: SimUnit in units:
 		if not unit.is_alive():
 			continue
@@ -238,7 +249,8 @@ func _is_valid_target(unit: SimUnit, other: SimUnit) -> bool:
 # ties: less HP, then lower ID (iteration is by ascending ID).
 func _choose_target(unit: SimUnit) -> int:
 	var candidates: Array[SimUnit] = []
-	for other: SimUnit in units:
+	var enemy_faction := SimUnit.Faction.ENEMY if unit.faction == SimUnit.Faction.PLAYER else SimUnit.Faction.PLAYER
+	for other: SimUnit in _alive_by_faction[enemy_faction]:
 		if _is_valid_target(unit, other):
 			candidates.append(other)
 	for ability: SimAbility in unit.abilities:
