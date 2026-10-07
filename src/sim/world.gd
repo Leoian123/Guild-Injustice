@@ -9,6 +9,12 @@ var rng: RandomNumberGenerator
 ## Index of the next tick to run. Ticks are numbered from 0 (GDD §6.1).
 var tick: int = 0
 var relic_timer: int = 0
+## Battle outcome (GDD §3): "" while running, then "win" or "lose".
+var result: String = ""
+## enemies_dead, player_dead, relic_stolen or timeout (GDD §11).
+var reason: String = ""
+## Last tick executed, -1 while running.
+var end_tick: int = -1
 ## Sorted by ascending ID, index = id - 1: IDs start at 1 and only grow.
 var units: Array[SimUnit] = []
 ## Sorted by ascending unit ID.
@@ -91,7 +97,14 @@ func get_unit(unit_id: int) -> SimUnit:
 	return units[unit_id - 1]
 
 
+func is_over() -> bool:
+	return result != ""
+
+
+## Runs one tick. Does nothing once the battle is over.
 func step() -> void:
+	if is_over():
+		return
 	_phase_states()
 	_phase_targets()
 	_phase_movement()
@@ -417,6 +430,42 @@ func _phase_periodic_abilities() -> void:
 	BreedAbility.run_breeding(self)
 
 
-# Phase 8: end of battle (GDD §3, M6).
+# Phase 8: end of battle (GDD §3), checked in this order.
 func _phase_battle_end() -> void:
-	pass
+	var player_alive: bool = false
+	var enemy_alive: bool = false
+	var enemy_on_relic: bool = false
+	var player_contests: bool = false
+	var relic := map.relic_position()
+	for unit: SimUnit in units:
+		if not unit.is_alive():
+			continue
+		var distance := unit.position.distance_to(relic)
+		if unit.faction == SimUnit.Faction.PLAYER:
+			player_alive = true
+			if distance <= rules.relic_contest_radius:
+				player_contests = true
+		else:
+			enemy_alive = true
+			if distance <= rules.relic_on_radius:
+				enemy_on_relic = true
+	if enemy_on_relic and not player_contests:
+		relic_timer += 1
+	elif relic_timer > 0:
+		relic_timer = 0
+		log_event(&"relic_timer_reset", 0, &"")
+
+	if not enemy_alive:
+		_end(&"win", &"enemies_dead")
+	elif not player_alive:
+		_end(&"lose", &"player_dead")
+	elif relic_timer >= rules.steal_ticks:
+		_end(&"lose", &"relic_stolen")
+	elif tick >= rules.time_limit_ticks - 1:
+		_end(&"lose", &"timeout")
+
+
+func _end(outcome: StringName, why: StringName) -> void:
+	result = String(outcome)
+	reason = String(why)
+	end_tick = tick
