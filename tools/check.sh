@@ -53,8 +53,10 @@ run_step "boot" "$LOG_DIR/boot.log" \
 
 # GdUnit4 exits 0 on success, 100 on failures, 101 on warnings (orphan nodes):
 # anything but 0 fails the gate.
+# A hung test (e.g. a loop on a battle that already ended) must fail the gate, not hang it.
+TEST_TIMEOUT_SECONDS=300
 run_step "tests" "$LOG_DIR/tests.log" \
-	"$GODOT" --headless --path . \
+	timeout "$TEST_TIMEOUT_SECONDS" "$GODOT" --headless --path . \
 	-s res://addons/gdUnit4/bin/GdUnitCmdTool.gd \
 	--ignoreHeadlessMode -a res://test -rd res://reports/raw/gdunit
 

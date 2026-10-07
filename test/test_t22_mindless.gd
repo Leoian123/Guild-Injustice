@@ -25,7 +25,7 @@ func test_T22_mindless_after_necromancer_dies() -> void:
 func _assert_mindless(world: World, undead: SimUnit, goblin: SimUnit, first_mindless: int) -> void:
 	var relic := world.map.relic_position()
 	var start_distance := undead.position.distance_to(relic)
-	while world.tick <= 60:
+	while world.tick <= 60 and not world.is_over():
 		var tick := world.tick
 		world.step()
 		if tick >= first_mindless:

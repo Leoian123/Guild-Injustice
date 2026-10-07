@@ -14,6 +14,8 @@ extends Resource
 ## Hunt group (`hunt`), variants A and B.
 @export var hunt_a: Array = []
 @export var hunt_b: Array = []
+## The room of the relic (GDD §4): guards hold it (GDD §7).
+@export var relic_room: Rect2i = Rect2i()
 ## Cells of the generic threat markers shown in the fog (GDD §5.1).
 @export var threat_markers: Array[Vector2i] = []
 

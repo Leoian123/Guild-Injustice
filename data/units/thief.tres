@@ -14,5 +14,6 @@ speed = 3.2
 engage_radius = 7.0
 chase_radius = 8.0
 will = &"HoldGroundWill"
+integrity = 1
 rational = true
 abilities = Array[StringName]([&"BackstabAbility"])

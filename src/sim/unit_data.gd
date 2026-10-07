@@ -25,6 +25,8 @@ const RANGED: StringName = &"ranged"
 @export var will: StringName = &""
 ## Only rational units take orders, such as guard duty (GDD §7).
 @export var rational: bool = false
+## Body left to eat or to raise (GDD §6.7); 0 = no corpse.
+@export var integrity: int = 0
 ## Ability component names (GDD §7, §8).
 @export var abilities: Array[StringName] = []
 

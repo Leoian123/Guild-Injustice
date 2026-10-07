@@ -84,8 +84,24 @@ static func _vote_and_move(world: World, swarm: Array[SimUnit]) -> void:
 	for unit: SimUnit in swarm:
 		var wander := _wander_of(unit)
 		wander.direction = winner
-		wander.destination = _clipped_point(world, unit.position, heading, world.rules.wander_radius)
+		var destination := _clipped_point(world, unit.position, heading, world.rules.wander_radius)
+		# A sated rat stays near its den to breed (GDD §7): the leg is pulled back to the leash.
+		if unit.will is HungerWill and (unit.will as HungerWill).is_sated():
+			destination = _leashed(world, unit.position, destination, (unit.will as HungerWill).den)
+		wander.destination = destination
 		wander.has_destination = true
+
+
+# `destination` pulled towards `den` until within SWARM_LEASH_RADIUS of it, then clipped by walls.
+static func _leashed(world: World, start: Vector2, destination: Vector2, den: Vector2) -> Vector2:
+	var leash := world.rules.swarm_leash_radius
+	if den.distance_to(destination) <= leash:
+		return destination
+	var target := den + (destination - den).limit_length(leash)
+	var length := start.distance_to(target)
+	if length == 0.0:
+		return start
+	return _clipped_point(world, start, (target - start) / length, length)
 
 
 # Farthest point along the line, up to `length`, that stays on floor and in sight of the start.

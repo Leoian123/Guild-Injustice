@@ -37,6 +37,8 @@ Legenda: `#` muro (non calpestabile, blocca la vista) · `.` pavimento · `E` in
 
 Percorsi A* fino alla reliquia: piazzale ~16 celle, esterno dell'ingresso est ~23, cimitero 37–47.
 
+**Stanze.** Le aree con un nome (Cuore, Sala sud, Santuario, Cimitero…) sono anche dati dello scenario, come rettangoli di celle: servono alle guardie (§7). Oggi lo scenario definisce il Cuore, la stanza della reliquia.
+
 ## 5. Visione e distanze
 
 ### 5.1 Nebbia e rivelazioni
@@ -72,7 +74,7 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 4. **Attacchi**: si scatta una **fotografia** dello stato (posizioni, orientamenti, vita). Per ogni unità con ricarica a 0, bersaglio vivo, a portata e in vista, si calcola il danno usando solo la fotografia. Calcolati tutti i danni, gli attaccanti si girano verso il proprio bersaglio e la loro ricarica riparte.
 5. **Danni**: applicati tutti insieme. Due unità possono uccidersi a vicenda.
 6. **Morti**: le unità con vita ≤ 0 diventano `DEAD` e lasciano un cadavere (§6.7).
-7. **Abilità periodiche**: prima la rianimazione, poi la riproduzione dei ratti.
+7. **Abilità periodiche**: prima la rianimazione, poi il pasto dei ratti (§6.8), poi la riproduzione dei ratti.
 8. **Fine battaglia**: §3.
 
 ### 6.3 Movimento
@@ -94,15 +96,16 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 - **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
 
 ### 6.6 Comportamento senza bersaglio
-- **Unità con `HoldGroundWill`: pattuglia.** Ai tick multipli di `PATROL_PERIOD_TICKS` ogni unità senza bersaglio sceglie con l'RNG, in ordine di ID, una cella calpestabile senza nemici il cui centro dista ≤ `PATROL_RADIUS` dal suo punto di schieramento (`GUARD_PATROL_RADIUS` per le guardie, §7), preferendo le celle senza alleati, e ci va. Prima della prima scelta, e dopo aver avuto un bersaglio, torna al punto di schieramento. La pattuglia è tarabile: oggi i valori sono costanti di regola; più avanti la taratura apparterrà alle entità grigie.
+- **Unità con `HoldGroundWill`: pattuglia.** Ai tick multipli di `PATROL_PERIOD_TICKS` ogni unità senza bersaglio sceglie con l'RNG, in ordine di ID, una cella calpestabile senza nemici il cui centro dista ≤ `PATROL_RADIUS` dal suo punto di schieramento, preferendo le celle senza alleati, e ci va. Le guardie pattugliano invece dentro la stanza dell'oggetto sorvegliato, una volta raggiunta (§7). Prima della prima scelta, e dopo aver avuto un bersaglio, torna al punto di schieramento. La pattuglia è tarabile: oggi i valori sono costanti di regola; più avanti la taratura apparterrà alle entità grigie.
 - **Ratti**: vagano (§7).
 - **Unità nemiche**: avanzano verso la reliquia.
 - Quali bersagli un'unità accetta di inseguire lo decide la sua volontà (§6.8).
 
 ### 6.7 Morte e cadaveri
 - Un cadavere resta per `CORPSE_TICKS` tick nella posizione della morte.
+- **Integrità.** Ogni unità ha un'integrità (§7, §8): quanto corpo resta da mangiare o da rianimare. Un goblin, pelle e ossa, ha 1; un revenant, carne impregnata di magia, ha molto; un paladino, uomo allenato in carne e ossa, moltissimo. Il cadavere parte con l'integrità dell'unità morta, che per un rianimato è già diminuita (§8). Un cadavere arrivato a integrità 0 sparisce.
 - **Alla morte** (fase 6, in ordine di ID), per ogni unità, rianimati compresi:
-  - se `floor(vita massima × REANIMATE_HP_RATIO)` < 1, il cadavere si distrugge: non c'è;
+  - se la sua integrità è 0 non lascia cadavere (per esempio un ratto);
   - altrimenti si tira il **dado della rianimabilità** con l'RNG. Il cadavere è rianimabile con probabilità `vita massima / (vita massima + K)`, dove `K = REANIMATE_K_BASE + x`. Il termine x raccoglie le condizioni del corpo (fede, malattia…), fuori dalla Fase 1: oggi x = 0. Più vita, più probabile.
   - Un cadavere non rianimabile resta visibile per lo stesso tempo, ma il necromante lo ignora.
 
@@ -112,10 +115,15 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 | Componente | Unità | Bersagli accettati |
 |---|---|---|
 | `HoldGroundWill` | `goblin` `archer` `thief` `paladin` | Nemici con `distanza(punto di schieramento, nemico) ≤ chase_radius + raggio d'attacco`, in linea d'aria. `chase_radius` è una statistica dell'unità (§7): il suo coraggio. |
-| `HungerWill` | `rat` del giocatore | Da affamato: qualunque nemico notato, senza limite. Da sazio: nessuno. |
+| `HungerWill` | `rat` del giocatore | Da affamato: qualunque nemico notato, senza limite, se non ha un cadavere da mangiare. Da sazio: nessuno. |
 | `NecroBoundWill` | `servant` `undead` `revenant` `necromancer` e ogni rianimato | Entro `NECRO_INFLUENCE_RADIUS` da un `necromancer` vivo: qualunque nemico notato, senza limite (caccia). Fuori: solo i nemici già entro il proprio raggio d'attacco e quelli che contendono la reliquia, cioè entro `RELIC_CONTEST_RADIUS` dal suo centro (senza mente: non deviano, salvo per difendere il furto). |
 
-**Fame del ratto.** Ogni ratto parte affamato con `RAT_HUNGER_BITES` morsi. Ogni attacco messo a segno toglie un morso. Al morso che porta il conto a 0 il ratto diventa sazio per `RAT_DIGEST_TICKS` tick. Il timer scende nella fase 1; quando arriva a 0, nella stessa fase il ratto torna affamato con `RAT_HUNGER_BITES` morsi. Da sazio non ha bersaglio e vaga. Un ratto rianimato non ha fame: ha `NecroBoundWill`.
+**Fame del ratto: lo spazzino.** Mordere non sazia: sazia mangiare un cadavere.
+- Ogni ratto nasce **sazio** (schierato o nato in battaglia) per `RAT_DIGEST_TICKS` tick. Il timer scende nella fase 1; a 0 il ratto è **affamato**.
+- **Sazio**: non ha bersaglio; vaga a sciame restando vicino alla sua tana (§7) e si riproduce.
+- **Affamato**: cerca cibo. Se nota un cadavere con integrità ≥ 1 (entro il proprio raggio d'ingaggio e in vista; il più vicino, a parità l'ID più basso dell'unità morta) ci va e non accetta bersagli. Altrimenti accetta qualunque nemico notato e vaga a sciame senza limiti.
+- **Pasto** (fase 7, dopo la rianimazione): un ratto affamato entro 1 cella dal suo cadavere lo mangia: l'integrità del cadavere scende di 1 e il ratto torna sazio per `RAT_DIGEST_TICKS` tick. I ratti mangiano in ordine di ID; a integrità 0 il cadavere sparisce.
+- Un ratto rianimato non ha fame: ha `NecroBoundWill`.
 
 **Influenza del necromante.** La distanza si misura dalla posizione dell'unità a quella del necromante vivo più vicino, senza bisogno di vista. Il necromante è sempre entro la propria influenza. Se tutti i necromanti muoiono, i non morti restano senza mente fino alla fine della battaglia. Con la volontà `FearlessTrait` non cambia: i non morti non fuggono mai.
 
@@ -132,25 +140,26 @@ Budget dello scenario: **2457**.
 **Schieramento.** Più unità alleate possono stare nella stessa cella; nessuna unità del giocatore può essere schierata in una cella con un nemico visibile.
 
 **Guardia della reliquia.** Allo schieramento il giocatore può comprare un'unità **razionale** come **guardia**, pagando `ceil(costo × (1 + GUARD_COST_RATIO))`. "La reliquia è più importante della tua vita": la guardia
-- ha come punto di schieramento il centro della reliquia: ovunque la si schieri, il suo compito è tornarci, esplorando la mappa lungo la strada;
+- ha come posto la **stanza dell'oggetto sorvegliato**: per la reliquia il Cuore (le stanze sono dati dello scenario, §4). Ovunque la si schieri, il suo compito è raggiungere la stanza, esplorando la mappa lungo la strada;
+- appena entra nella stanza sceglie con l'RNG una cella della stanza calpestabile, senza nemici, senza alleati e non già scelta da un'altra guardia, e ci va; poi pattuglia **dentro la stanza** (§6.6), con le stesse preferenze. Così le guardie non si ammucchiano;
 - non insegue: accetta come bersaglio solo i nemici già entro il proprio raggio d'attacco;
-- non fugge mai;
-- pattuglia entro `GUARD_PATROL_RADIUS` dalla reliquia (§6.6).
+- non fugge mai.
+- Dopo l'MVP l'oggetto sorvegliato potrà essere un'unità (un ladro che fa da guardia a un arciere).
 
 **Razionale** è un dato dell'unità: solo le unità razionali possono ricevere ordini, e in Fase 1 l'unico ordine è la guardia. Più avanti le entità grigie e i potenziamenti daranno ordini anche alle unità non razionali.
 
-| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Razionale | Volontà | Abilità |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | `HungerWill` | `WanderBehavior`, `BreedAbility` |
-| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | sì | `HoldGroundWill` | `PackCourageAbility` |
-| Arciere | `archer` | 300 | 35 | 12 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | `HoldGroundWill` | `PointBlankPenalty` |
-| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | sì | `HoldGroundWill` | `BackstabAbility` |
-| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | sì | `HoldGroundWill` | `ArmorAbility` |
+| Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Razionale | Integrità | Volontà | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | 0 | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | sì | 1 | `HoldGroundWill` | `PackCourageAbility` |
+| Arciere | `archer` | 300 | 35 | 12 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | 1 | `HoldGroundWill` | `PointBlankPenalty` |
+| Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | sì | 1 | `HoldGroundWill` | `BackstabAbility` |
+| Paladino | `paladin` | 1900 | 400 | 25 | 1,4 s | 1 | `melee` | 1,2 | 4 | 5 | sì | 16 | `HoldGroundWill` | `ArmorAbility` |
 
 "Insegue" è `chase_radius`, in celle (§6.8).
 
-**Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e inseguono finché hanno fame (§6.8).
-- *Vagabondaggio a sciame*: i ratti del giocatore con `WanderBehavior`, vivi e senza bersaglio (sazi compresi), formano sciami. Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Un ratto che ottiene un bersaglio abbandona la meta.
+**Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione, ma il punto in cui sono liberati è la loro **tana**; i neonati prendono la tana del primo genitore. Da sazi restano vicino alla tana a riprodursi, da affamati escono a cercare cibo (§6.8).
+- *Vagabondaggio a sciame*: i ratti del giocatore con `WanderBehavior`, vivi e senza bersaglio (sazi compresi), formano sciami. Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Per un ratto **sazio** la meta si accorcia inoltre verso la tana fino a stare entro `SWARM_LEASH_RADIUS` da essa. Un ratto che ottiene un bersaglio, o che va a mangiare, abbandona la meta.
 - *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Qui "libera" vale anche per gli alleati, per distribuire le nascite; per il resto valgono le regole d'ingombro del §6.3.
 
 **Goblin, coraggio di gruppo.**
@@ -170,16 +179,16 @@ Budget dello scenario: **2457**.
 
 ## 8. Fazione nemica: Non morti del Necromante
 
-| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Razionale | Abilità |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | `melee` | 3,0 | 5 | no | `FearlessTrait` |
-| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | `melee` | 1,5 | 4 | no | `FearlessTrait` |
-| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | `melee` | 2,2 | 5 | no | `FearlessTrait` |
-| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | `ranged` | 1,3 | 6 | sì | `FearlessTrait`, `ReanimateAbility` |
+| Unità | ID | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Razionale | Integrità | Abilità |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Servo del necromante | `servant` | 30 | 5 | 1,0 s | 1 | `melee` | 3,0 | 5 | no | 1 | `FearlessTrait` |
+| Non morto | `undead` | 80 | 8 | 1,3 s | 1 | `melee` | 1,5 | 4 | no | 3 | `FearlessTrait` |
+| Revenant | `revenant` | 250 | 18 | 1,2 s | 1 | `melee` | 2,2 | 5 | no | 10 | `FearlessTrait` |
+| Necromante | `necromancer` | 120 | 10 | 2,0 s | 5 | `ranged` | 1,3 | 6 | sì | 2 | `FearlessTrait`, `ReanimateAbility` |
 
-**Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere rianimabile (§6.7) entro `REANIMATE_RADIUS` e in vista, rianima quello con la **vita massima più alta**: per lui i servitori sono scudi di carne. A parità sceglie il più vicino, poi l'ID più basso. Poi la ricarica riparte. Vale per qualunque cadavere, anche dei propri servi.
+**Necromante, rianimazione.** Ricarica di `REANIMATE_COOLDOWN_TICKS`, pronta all'inizio. Quando è pronta e c'è un cadavere rianimabile (§6.7) entro `REANIMATE_RADIUS` e in vista, rianima quello con l'**integrità più alta**, cioè quello che darà il rianimato più forte: per lui i servitori sono scudi di carne. A parità sceglie il più vicino, poi l'ID più basso. Un cadavere è rianimabile se ha integrità ≥ 1 e ha superato il dado (§6.7), anche se i ratti lo stanno mangiando. Poi la ricarica riparte. Vale per qualunque cadavere, anche dei propri servi.
 - **Il dardo.** Quando non rianima, il necromante attacca a distanza come le altre unità. Nella fase 4 di un tick in cui la rianimazione è pronta e c'è un cadavere rianimabile entro il raggio e in vista, non attacca: in quel tick rianima.
-- **Rianimazione a catena.** Il rianimato ha vita massima (e vita) pari a `floor(vita massima dell'unità morta × REANIMATE_HP_RATIO)`: metà della vita che aveva l'ultima volta. Esempio: paladino 400, poi 200, poi 100… Danno, tempi, raggi e velocità restano quelli dell'unità originale. Sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
+- **Rianimazione a catena.** Rianimare toglie 1 di integrità. Il rianimato ha vita massima (e vita) pari a `integrità del cadavere × INTEGRITY_HP` e integrità pari a quella del cadavere − 1; quando ricade, il suo cadavere parte da quel valore. Esempio: paladino 400 di vita e integrità 16; rianimato 400 e integrità 15; poi 375 e 14… Un goblin (integrità 1) si rialza una volta con 25 di vita e poi non lascia cadavere. I ratti che mangiano un cadavere ne riducono l'integrità, e quindi la forza del rianimato. Danno, tempi, raggi e velocità restano quelli dell'unità originale. Sta nella fazione nemica e ha solo `FearlessTrait`: perde tutte le altre abilità. Un arciere rianimato tira ancora (il raggio è una statistica), ma senza `PointBlankPenalty`; un ratto rianimato non si riproduce e non conta nel tetto; un paladino rianimato non ha corazza.
 - Si comporta come un'unità nemica: avanza verso la reliquia.
 
 - **Cella occupata.** Se la cella del cadavere è occupata da un nemico del rianimato, il rianimato nasce al centro della prima cella calpestabile senza suoi nemici, cercando in anelli via via più ampi, in ordine di riga e colonna, senza RNG.
@@ -225,9 +234,8 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
 | `SWARM_RADIUS` | 3,0 | | `GUARD_COST_RATIO` | 0,10 |
 | `PATROL_PERIOD_TICKS` | 60 | | `PATROL_RADIUS` | 2,0 |
-| `GUARD_PATROL_RADIUS` | 1,0 | | | |
-| `RAT_HUNGER_BITES` | 3 | | `RAT_DIGEST_TICKS` | 100 |
-| `REANIMATE_HP_RATIO` | 0,5 | | `REANIMATE_K_BASE` | 1,0 |
+| `SWARM_LEASH_RADIUS` | 4,0 | | `RAT_DIGEST_TICKS` | 200 |
+| `INTEGRITY_HP` | 25 | | `REANIMATE_K_BASE` | 1,0 |
 
 ## 11. Contratto di `tools/sim.sh`
 Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cmdline_user_args()`).

@@ -37,12 +37,15 @@ static func run_breeding(world: World) -> void:
 			var newborn := world.spawn_newborn(first.data, first.faction, SimMap.cell_center(cell))
 			# Test mode (docs/TESTS.md): a newborn of AI-off parents stays AI-off. Always true in play.
 			newborn.ai_enabled = first.ai_enabled
+			# A newborn takes the den of its first parent (GDD §7).
+			if newborn.will is HungerWill and first.will is HungerWill:
+				(newborn.will as HungerWill).den = (first.will as HungerWill).den
 			rat_count += 1
 
 
 ## Free cells (walkable, no living unit) of the 3×3 square around `center`; if none,
 ## of the next ring outward, and so on (GDD §7). Row-major order. Empty if the map has none.
-## Occupancy only spreads births: units never block each other otherwise (GDD §6.3).
+## Here allies count too, to spread births; movement follows the body blocking of GDD §6.3.
 static func _free_cells_near(world: World, center: Vector2i) -> Array[Vector2i]:
 	var occupied: Dictionary = {}
 	for unit: SimUnit in world.units:

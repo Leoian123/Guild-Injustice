@@ -14,5 +14,6 @@ speed = 1.2
 engage_radius = 4.0
 chase_radius = 5.0
 will = &"HoldGroundWill"
+integrity = 16
 rational = true
 abilities = Array[StringName]([&"ArmorAbility"])

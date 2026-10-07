@@ -21,6 +21,7 @@ static func unit_data(unit_type: StringName) -> UnitData:
 ## World before reconnaissance: variants rolled, enemies spawned, no player unit yet.
 static func create_world(scenario: ScenarioData, rules: RulesData, seed_value: int) -> World:
 	var world := World.new(rules, SimMap.load_from_file(scenario.map_path), seed_value)
+	world.relic_room = scenario.relic_room
 	world.blitz_variant = _roll_variant(world.rng)
 	world.hunt_variant = _roll_variant(world.rng)
 	_spawn_group(world, scenario.group_entries(&"blitz", world.blitz_variant))
@@ -31,6 +32,7 @@ static func create_world(scenario: ScenarioData, rules: RulesData, seed_value: i
 ## Tools and tests: a world with the enemies of a chosen variant combination, no roll.
 static func create_world_with_variants(scenario: ScenarioData, rules: RulesData, blitz: String, hunt: String) -> World:
 	var world := World.new(rules, SimMap.load_from_file(scenario.map_path), 0)
+	world.relic_room = scenario.relic_room
 	world.blitz_variant = blitz
 	world.hunt_variant = hunt
 	_spawn_group(world, scenario.group_entries(&"blitz", blitz))
@@ -43,7 +45,7 @@ static func deploy(world: World, plan: DeploymentPlan) -> void:
 	for entry: Dictionary in plan.entries:
 		var unit := world.spawn_unit(unit_data(entry["type"]), SimUnit.Faction.PLAYER, SimMap.cell_center(entry["cell"]))
 		if entry["guard"]:
-			# A guard's post is the relic, wherever it was deployed (GDD §7).
+			# A guard's post is the relic's room, wherever it was deployed (GDD §7).
 			unit.guard = true
 			unit.home = world.map.relic_position()
 

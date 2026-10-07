@@ -18,7 +18,7 @@ func test_T14_goblin_flees() -> void:
 	assert_array(flee_starts).has_size(1)
 	assert_float(goblin.position.distance_to(relic)).is_less(distance)
 
-	while world.tick <= 19:
+	while world.tick <= 19 and not world.is_over():
 		distance = goblin.position.distance_to(relic)
 		world.step()
 		assert_int(servant.hp).is_equal(30)

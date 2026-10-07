@@ -14,4 +14,5 @@ speed = 3.0
 engage_radius = 5.0
 chase_radius = 0.0
 will = &"NecroBoundWill"
+integrity = 1
 abilities = Array[StringName]([&"FearlessTrait"])

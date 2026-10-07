@@ -57,7 +57,7 @@ func test_T33_swarm_moves_together() -> void:
 
 # Until tick 60 every loss of HP is a multiple of `hit`; after tick 60 the target was hit.
 func _assert_hits_are_multiples(world: World, target: SimUnit, hit: int) -> void:
-	while world.tick <= 60:
+	while world.tick <= 60 and not world.is_over():
 		var tick := world.tick
 		world.step()
 		assert_int((target.max_hp - target.hp) % hit) \

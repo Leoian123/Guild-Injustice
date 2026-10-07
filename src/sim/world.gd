@@ -9,6 +9,8 @@ var rng: RandomNumberGenerator
 ## Index of the next tick to run. Ticks are numbered from 0 (GDD §6.1).
 var tick: int = 0
 var relic_timer: int = 0
+## Room of the relic (GDD §4), held by guards (GDD §7). A fixed input of the scenario.
+var relic_room: Rect2i = Rect2i()
 ## Scenario variants rolled at creation (GDD §9): "A" or "B", empty in test worlds.
 var blitz_variant: String = ""
 var hunt_variant: String = ""
@@ -57,14 +59,15 @@ func spawn_newborn(data: UnitData, faction: SimUnit.Faction, position: Vector2) 
 	return unit
 
 
-## Reanimation (GDD §8): max HP = floor(dead unit's max HP × REANIMATE_HP_RATIO), other stats
-## of the original, enemy faction, only FearlessTrait, NecroBoundWill (GDD §6.8), new ID,
-## at the corpse; the corpse disappears.
+## Reanimation (GDD §8): max HP = corpse integrity × INTEGRITY_HP, integrity one point less,
+## other stats of the original, enemy faction, only FearlessTrait, NecroBoundWill (GDD §6.8),
+## new ID, at the corpse; the corpse disappears.
 func reanimate(corpse: SimCorpse) -> SimUnit:
 	var original := get_unit(corpse.unit_id)
 	var unit := SimUnit.new(_next_id, original.data, SimUnit.Faction.ENEMY, corpse.position, rules.tick_rate)
-	unit.max_hp = reanimated_max_hp(original.max_hp)
+	unit.max_hp = corpse.integrity * rules.integrity_hp
 	unit.hp = unit.max_hp
+	unit.integrity = corpse.integrity - 1
 	var abilities: Array[SimAbility] = [FearlessTrait.new()]
 	unit.abilities = abilities
 	unit.will = NecroBoundWill.new()
@@ -76,10 +79,6 @@ func reanimate(corpse: SimCorpse) -> SimUnit:
 	corpses.erase(corpse)
 	log_event(&"reanimate", unit.id, unit.unit_type)
 	return unit
-
-
-func reanimated_max_hp(max_hp: int) -> int:
-	return floori(max_hp * rules.reanimate_hp_ratio)
 
 
 ## Chance that a corpse is reanimable (GDD §6.7): max HP / (max HP + K), K = REANIMATE_K_BASE + x.
@@ -161,7 +160,7 @@ func state_hash() -> String:
 
 # Fixed inputs, data derived from them and the per-tick damage buffer are not state.
 func hash_excluded() -> PackedStringArray:
-	return PackedStringArray(["rules", "map", "pathfinder", "_pending_damage", "events",
+	return PackedStringArray(["rules", "map", "pathfinder", "relic_room", "_pending_damage", "events",
 		"_occupied", "_last_path_ignored_units"])
 
 
@@ -486,7 +485,6 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 		if not to_target.is_zero_approx():
 			unit.facing = to_target.normalized()
 		unit.attack_cd = unit.attack_interval_ticks
-		unit.will.on_attack_landed(self, unit)
 		if unit.ai_enabled:
 			unit.state = SimUnit.State.ATTACK
 
@@ -511,14 +509,15 @@ func _phase_deaths() -> void:
 			unit.state = SimUnit.State.DEAD
 			unit.target_id = SimUnit.NO_TARGET
 			log_event(&"death", unit.id, unit.unit_type)
-			# A body too weak to be raised again is destroyed (GDD §6.7).
-			if reanimated_max_hp(unit.max_hp) < 1:
+			# No body left: no corpse (GDD §6.7).
+			if unit.integrity < 1:
 				continue
 			var corpse := SimCorpse.new()
 			corpse.unit_id = unit.id
 			corpse.unit_type = unit.unit_type
 			corpse.position = unit.position
 			corpse.ttl = rules.corpse_ticks
+			corpse.integrity = unit.integrity
 			corpse.reanimable = rng.randf() < reanimation_chance(unit.max_hp, rules)
 			_insert_corpse(corpse)
 
@@ -531,12 +530,29 @@ func _insert_corpse(corpse: SimCorpse) -> void:
 	corpses.insert(index, corpse)
 
 
-# Phase 7: reanimation, then rat breeding. Units born here do not act until the next tick.
+# Phase 7: reanimation, then rats' meals, then rat breeding (GDD §6.2).
+# Units born here do not act until the next tick.
 func _phase_periodic_abilities() -> void:
 	for unit: SimUnit in units.duplicate():
 		for ability: SimAbility in unit.abilities:
 			ability.on_periodic(self, unit)
+	HungerWill.run_meals(self)
 	BreedAbility.run_breeding(self)
+
+
+## The corpse of `unit_id`, or null if it is gone.
+func corpse_of(unit_id: int) -> SimCorpse:
+	for corpse: SimCorpse in corpses:
+		if corpse.unit_id == unit_id:
+			return corpse
+	return null
+
+
+## One bite of a corpse (GDD §6.8): integrity down by 1; at 0 the corpse disappears.
+func eat(corpse: SimCorpse) -> void:
+	corpse.integrity -= 1
+	if corpse.integrity <= 0:
+		corpses.erase(corpse)
 
 
 # Phase 8: end of battle (GDD §3), checked in this order.

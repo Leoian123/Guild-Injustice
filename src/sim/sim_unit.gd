@@ -37,8 +37,10 @@ var home: Vector2 = Vector2.ZERO
 var last_target_tick: int = 0
 ## Ticks lived; deployed units start at NEWBORN_COOLDOWN_TICKS (GDD §6.1).
 var age: int = 0
-## Reanimated units leave no corpse (GDD §6.7).
+## Raised by a necromancer (GDD §8).
 var reanimated: bool = false
+## Body left to eat or to raise (GDD §6.7); a risen unit has one point less than its corpse.
+var integrity: int = 0
 ## Only rational units take orders (GDD §7).
 var rational: bool = false
 ## Guard of the relic (GDD §7): home is the relic, no chasing, never flees.
@@ -69,6 +71,7 @@ func _init(p_id: int, p_data: UnitData, p_faction: Faction, p_position: Vector2,
 	engage_radius = p_data.engage_radius
 	chase_radius = p_data.chase_radius
 	rational = p_data.rational
+	integrity = p_data.integrity
 	will = SimWill.create(p_data.will)
 	for ability_name: StringName in p_data.abilities:
 		abilities.append(SimAbility.create(ability_name))

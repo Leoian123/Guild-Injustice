@@ -360,3 +360,25 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: aspettare il report di bilanciamento di M6.
 - Cambia l'esito di una battaglia: sì
 - Stato: confermata (umano, 7 ottobre 2026)
+
+### D-038 · Integrità: due interpretazioni da confermare
+- Sezione GDD: §6.7, §8 (regole dell'umano del 7 ottobre 2026: integrità per unità, rianimazione con integrità ≥ 1, "rianimare toglie 1 punto integrità" al posto del dimezzamento, vita del rianimato "porzione × 25")
+- Ambiguità: (1) se la vita del rianimato si calcola sull'integrità del cadavere prima o dopo il punto tolto; (2) con quale criterio il necromante sceglie fra i cadaveri, ora che la vita del rianimato dipende dall'integrità e non più dalla vita massima.
+- Scelta: (1) vita = integrità del cadavere × `INTEGRITY_HP`, prima del punto tolto; il rianimato ha integrità − 1. Con l'altra lettura un goblin (integrità 1) si rialzerebbe con 0 di vita. (2) Il necromante sceglie il cadavere con l'integrità più alta, cioè quello che darà il rianimato con più vita, coerente con "scudi di carne".
+- Alternative: (1) vita = (integrità − 1) × 25; (2) scegliere ancora per vita massima originale.
+- Cambia l'esito di una battaglia: sì
+- Stato: da confermare
+
+### D-039 · Dettagli dello spazzino e delle guardie nella stanza
+- Sezione GDD: §6.7, §6.8, §7, §4
+- Ambiguità: dettagli tecnici delle nuove regole.
+- Scelta:
+  - Il ratto affamato sceglie il cadavere nella fase 1 (posizioni correnti) e mangia nella fase 7, dopo la rianimazione, se è entro 1 cella. Mangia qualunque cadavere, anche di un alleato.
+  - La tana è salvata nella volontà del ratto (`HungerWill.den`) ed entra nell'hash. Lo sciame sazio accorcia la meta verso la tana e poi la taglia sui muri.
+  - Le stanze sono rettangoli nello scenario. Oggi c'è solo `relic_room` (Cuore: x 31–40, y 10–18). Sulla mappa di test la stanza è x 17–22, y 3–8, lontana dall'ancora nemica: con y fino a 9 una guardia la uccideva e la battaglia finiva.
+  - Una guardia sceglie la prima cella appena entra nella stanza (fase 3, in ordine di ID) e poi ai tick di pattuglia. Le celle già scelte da altre guardie sono escluse se c'è alternativa.
+  - Il test T42 verifica che le guardie restino nella stanza con mete diverse, ma non distingue da solo la regola delle "celle già scelte": togliendola passa lo stesso, perché la preferenza per le celle senza alleati basta quasi sempre.
+  - `TestWorlds.run_until` e i cicli dei test si fermano a battaglia finita, e `tools/check.sh` dà 300 s al passo dei test: un ciclo su una battaglia già finita bloccava il gate.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata

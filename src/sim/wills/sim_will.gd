@@ -63,7 +63,3 @@ func may_kite(_world: World, _unit: SimUnit) -> bool:
 func allows_kite_step(_world: World, _unit: SimUnit, _position: Vector2) -> bool:
 	return true
 
-
-## Phase 4: the unit landed an attack.
-func on_attack_landed(_world: World, _unit: SimUnit) -> void:
-	pass

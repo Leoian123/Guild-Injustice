@@ -37,7 +37,13 @@ static func temple_01() -> SimMap:
 
 ## World on the test map. Call add_anchors() after creating the test's own units.
 static func world(seed_value: int, extra_walls: Array[Vector2i] = [], rules_value: RulesData = null) -> World:
-	return World.new(rules_value if rules_value != null else rules(), test_map(extra_walls), seed_value)
+	var result := World.new(rules_value if rules_value != null else rules(), test_map(extra_walls), seed_value)
+	result.relic_room = TEST_MAP_RELIC_ROOM
+	return result
+
+
+## Room of the relic on the test map (docs/TESTS.md): x 17–22, y 3–8, away from the enemy anchor.
+const TEST_MAP_RELIC_ROOM: Rect2i = Rect2i(17, 3, 6, 6)
 
 
 ## Test-local copy of the rules with another REANIMATE_K_BASE (docs/TESTS.md, "Dado neutralizzato" = 0).
@@ -58,9 +64,9 @@ static func add_anchors(world_value: World) -> void:
 	spawn(world_value, &"undead", SimUnit.Faction.ENEMY, Vector2i(21, 10), false)
 
 
-## Steps until tick `last` has run ("after tick N" in docs/TESTS.md).
+## Steps until tick `last` has run ("after tick N" in docs/TESTS.md), or the battle is over.
 static func run_until(world_value: World, last: int) -> void:
-	while world_value.tick <= last:
+	while world_value.tick <= last and not world_value.is_over():
 		world_value.step()
 
 

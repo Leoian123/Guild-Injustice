@@ -14,5 +14,6 @@ speed = 2.5
 engage_radius = 5.0
 chase_radius = 6.0
 will = &"HoldGroundWill"
+integrity = 1
 rational = true
 abilities = Array[StringName]([&"PackCourageAbility"])
