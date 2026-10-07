@@ -138,7 +138,7 @@ Budget dello scenario: **2457**.
 
 **Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione e inseguono finché hanno fame (§6.8).
 - *Vagabondaggio*: senza bersaglio, ogni `WANDER_PERIOD_TICKS` tick (dal proprio ultimo spostamento casuale) sceglie con l'RNG una cella calpestabile entro `WANDER_RADIUS` e ci va.
-- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce in una cella calpestabile scelta con l'RNG entro 1 cella dal punto medio della coppia.
+- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Le celle servono solo a distribuire le nascite: per tutto il resto le unità non si bloccano (§6.3).
 
 **Goblin, coraggio di gruppo.**
 - Con almeno `COURAGE_MIN_ALLIES` altri goblin entro `COURAGE_RADIUS`: danno × (1 + `COURAGE_BONUS`).

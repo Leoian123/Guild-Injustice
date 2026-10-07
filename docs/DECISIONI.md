@@ -230,7 +230,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: celle calpestabili il cui centro dista ≤ 1,0 dal punto medio, elencate per riga e poi per colonna; l'RNG sceglie con `randi_range(0, n − 1)`. Se il punto medio è il centro di una cella, le candidate sono quella cella e le 4 ortogonali. Se non c'è nessuna cella candidata, la coppia non genera.
 - Alternative: le 9 celle del quadrato 3×3 intorno alla cella del punto medio.
 - Cambia l'esito di una battaglia: sì (posizione dei neonati e uso dell'RNG)
-- Stato: da confermare
+- Stato: decisa dall'umano (7 ottobre 2026), diversa dalla scelta iniziale: quadrato 3×3 intorno alla cella del punto medio, solo celle libere (senza unità vive); se nessuna, gli anelli successivi. L'occupazione serve solo a distribuire le nascite, le unità restano senza collisioni (GDD §7, T31).
 
 ### D-026 · Tempi del vagabondaggio
 - Sezione GDD: §7 (Vagabondaggio)
@@ -257,7 +257,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
   - Il necromante può rianimare **qualunque** cadavere, anche di un'unità nemica (servo, non morto, revenant): il GDD dice "un cadavere".
 - Alternative: orientamento del cadavere; solo cadaveri delle unità del giocatore.
 - Cambia l'esito di una battaglia: sì (orientamento e quindi pugnalate; il necromante che rialza i propri servi)
-- Stato: in parte decisa (umano, 7 ottobre 2026): il necromante rianima qualunque cadavere, servi compresi ("scudi di carne"). Resta da confermare l'orientamento iniziale di neonati e rianimati.
+- Stato: confermata (umano, 7 ottobre 2026): il necromante rianima qualunque cadavere; neonati e rianimati prendono l'orientamento iniziale della propria fazione.
 
 ### D-029 · Dettagli della fuga del goblin
 - Sezione GDD: §7 (Goblin)
