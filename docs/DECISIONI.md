@@ -223,3 +223,63 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: elenco fisso di campi nel GDD (D-002, superata); ECS (escluso da `CLAUDE.md`, vedi Δ-01).
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-025 · Cella di nascita dei ratti
+- Sezione GDD: §7 (Riproduzione)
+- Ambiguità: "cella calpestabile scelta con l'RNG entro 1 cella dal punto medio della coppia" non dice come si misura "entro 1 cella" né in che ordine si elencano le celle per l'RNG.
+- Scelta: celle calpestabili il cui centro dista ≤ 1,0 dal punto medio, elencate per riga e poi per colonna; l'RNG sceglie con `randi_range(0, n − 1)`. Se il punto medio è il centro di una cella, le candidate sono quella cella e le 4 ortogonali. Se non c'è nessuna cella candidata, la coppia non genera.
+- Alternative: le 9 celle del quadrato 3×3 intorno alla cella del punto medio.
+- Cambia l'esito di una battaglia: sì (posizione dei neonati e uso dell'RNG)
+- Stato: da confermare
+
+### D-026 · Tempi del vagabondaggio
+- Sezione GDD: §7 (Vagabondaggio)
+- Ambiguità: "ogni `WANDER_PERIOD_TICKS` tick (dal proprio ultimo spostamento casuale)" non dice quando avviene la prima scelta né quali celle sono candidate.
+- Scelta: la prima scelta avviene appena il ratto è senza bersaglio, poi ogni 20 tick dalla scelta precedente, anche se il ratto non è ancora arrivato; il conteggio continua anche mentre il ratto ha un bersaglio. Le candidate sono le celle calpestabili il cui centro dista ≤ `WANDER_RADIUS` dalla posizione del ratto, compresa la sua cella, in ordine di riga e colonna; la destinazione è il centro della cella scelta.
+- Alternative: prima scelta dopo 20 tick; esclusa la cella attuale.
+- Cambia l'esito di una battaglia: sì (uso dell'RNG e movimento dei ratti)
+- Stato: da confermare
+
+### D-027 · Il ladro si sposta alle spalle anche quando è già a portata
+- Sezione GDD: §7 (Ladro), §6.5
+- Ambiguità: il ladro "si avvicina al punto 1 cella dietro al bersaglio", ma la regola comune dice che chi ha il bersaglio a portata e in vista non si muove.
+- Scelta: con il punto alle spalle libero, il ladro va sempre verso quel punto, anche se il bersaglio è già a portata, e intanto attacca quando la ricarica è pronta. Arrivato, resta lì. Se il punto è un muro vale la regola comune: va diretto sul bersaglio e si ferma a portata. Senza questa lettura un ladro che arriva di fronte si fermerebbe a portata e non pugnalerebbe mai alle spalle.
+- Alternative: regola comune, cioè fermo appena a portata (la pugnalata riesce solo se arriva già da dietro).
+- Cambia l'esito di una battaglia: sì
+- Stato: da confermare
+
+### D-028 · Unità nate in battaglia: orientamento, rianimazione di cadaveri nemici
+- Sezione GDD: §6.5, §7, §8
+- Ambiguità: il GDD dà l'orientamento iniziale solo per le unità schierate e non dice di chi sono i cadaveri che il necromante può rianimare.
+- Scelta:
+  - Neonati e rianimati ricevono l'orientamento iniziale della propria fazione: ratto neonato rivolto lontano dalla reliquia, rianimato rivolto verso la reliquia.
+  - Il rianimato nasce con IA attiva, ricarica pronta, età 0 e punto di schieramento sul cadavere.
+  - Il necromante può rianimare **qualunque** cadavere, anche di un'unità nemica (servo, non morto, revenant): il GDD dice "un cadavere".
+- Alternative: orientamento del cadavere; solo cadaveri delle unità del giocatore.
+- Cambia l'esito di una battaglia: sì (orientamento e quindi pugnalate; il necromante che rialza i propri servi)
+- Stato: da confermare
+
+### D-029 · Dettagli della fuga del goblin
+- Sezione GDD: §7 (Goblin)
+- Ambiguità: dettagli non scritti della fuga.
+- Scelta:
+  - Il controllo avviene nella fase 1, sulle posizioni correnti.
+  - Entrando in `FLEE` l'unità perde il bersaglio; in fuga non sceglie bersagli, non arretra e non attacca, e corre alla reliquia lungo A*.
+  - "Entro 1 cella dalla reliquia" vale ≤ 1,0 dal centro.
+  - All'uscita lo stato torna `IDLE`.
+  - "Goblin alleati" sono le unità vive dello stesso tipo e della stessa fazione: `PackCourageAbility` usa il tipo del proprietario, quindi vale per qualunque unità che la abbia.
+  - Con IA spenta non fugge, perché "non cambia stato da sola"; il bonus di danno resta, come prevede la modalità di test.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no (è il testo applicato alla lettera)
+- Stato: confermata
+
+### D-030 · Modalità di test: neonati, eventi, varianti di unità
+- Sezione GDD: —; `docs/TESTS.md`
+- Ambiguità: come trattare i neonati di genitori con IA spenta (T08); dove stanno gli eventi.
+- Scelta:
+  - Un neonato eredita `ai_enabled` dal primo genitore. In partita l'IA è sempre attiva, quindi non cambia nessuna battaglia vera. Senza questa regola, in T08 il neonato vagabonda oltre `BREED_RADIUS` e la coppia non genera: sarebbero 5 ratti invece di 6.
+  - Gli eventi del §11 (`death`, `reanimate`, `birth`, `flee_start`, `flee_end`) sono in `World.events`: sono solo uscita e restano fuori dallo `state_hash`.
+  - Le statistiche dei test ora vengono da `data/units/`; le varianti si costruiscono nel test (`TestWorlds.without_ability`).
+- Alternative: neonati sempre con IA attiva (T08 fallirebbe in modo casuale).
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
