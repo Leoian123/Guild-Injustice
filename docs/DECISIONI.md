@@ -136,7 +136,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: un'unità del giocatore può avere come bersaglio solo un nemico con `distanza(punto di schieramento, nemico) ≤ LEASH_RADIUS + raggio d'attacco`, in linea d'aria. Per il corpo a corpo il limite è 7, per l'arciere 12. Il controllo vale sia nella scelta sia in ogni tick successivo: se il bersaglio esce dal limite viene abbandonato subito, come uno non più notato. Senza bersaglio l'unità torna al punto di schieramento. I nemici non hanno limite. L'eccezione dei ratti arriva in M4.
 - Alternative: (a) il nemico stesso deve stare entro `LEASH_RADIUS` dal punto di schieramento (limite 6 per tutti, l'arciere non tira oltre); (b) come la scelta, ma con la distanza lungo il percorso A* invece che in linea d'aria (conta i muri, più costoso).
 - Cambia l'esito di una battaglia: sì
-- Stato: superata (umano, 2026-10-07: la volontà di inseguire dipende dall'unità — fame, influenza del necromante, coraggio; vedi M3.1 e docs/PROPOSTA_M3.1.md). Fino a M3.1 resta in vigore la scelta implementata.
+- Stato: superata (umano, 2026-10-07: la volontà di inseguire dipende dall'unità — fame, influenza del necromante, coraggio; vedi M3.1 e GDD §6.8). Fino a M3.1 resta in vigore la scelta implementata.
 
 ### D-015 · Quando un'unità smette di avvicinarsi al bersaglio
 - Sezione GDD: §6.3, §6.5
@@ -144,7 +144,7 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: nella fase 3, se il bersaglio è già a portata e in vista l'unità non si muove; altrimenti percorre tutto il passo del tick (`velocità / 20`). Può quindi finire fino a un passo più vicina del raggio d'attacco (al massimo 0,16 celle). Il percorso segue i centri delle celle di A* (partendo dalla cella della posizione attuale) e l'ultimo punto è la posizione esatta della destinazione. Viene ricalcolato a ogni tick. L'orientamento diventa la direzione dell'ultimo tratto percorso nel tick.
 - Alternative: fermarsi a metà tick appena si entra a portata (distanza finale = raggio d'attacco, salvo vista).
 - Cambia l'esito di una battaglia: sì (di poco: posizioni finali diverse fino a un passo)
-- Stato: superata (umano, 2026-10-07: il corpo a corpo ingaggia, le unità a distanza arretrano; vedi M3.1 e docs/PROPOSTA_M3.1.md). Il corpo a corpo resta come implementato.
+- Stato: superata (umano, 2026-10-07: il corpo a corpo ingaggia, le unità a distanza arretrano; vedi M3.1 e GDD §6.8). Il corpo a corpo resta come implementato.
 
 ### D-016 · Significato degli stati
 - Sezione GDD: §6.2
@@ -184,4 +184,26 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Scelta: ricalcolo a ogni tick, senza cache. Misura su `temple_01`: 6000 tick con 20 unità in circa 1,4 s. Se i batch di M6 saranno lenti, si aggiungerà una cache che dà gli stessi percorsi.
 - Alternative: cache del percorso per destinazione.
 - Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-021 · Struttura della volontà
+- Sezione GDD: §6.8
+- Ambiguità: come si collega la volontà all'unità e al tick.
+- Scelta: `SimWill` (`src/sim/wills/`) è la base comune, con un'istanza per unità creata dal nome in `UnitData.will`. Ha un punto di aggancio per ogni momento del tick: creazione dell'unità (`on_spawn`), fase 1 (`on_tick_start`), fase 2 (`accepts`), fase 3 (`idle_destination`, `allows_step`, `may_kite`, `allows_kite_step`), fase 4 (`on_attack_landed`). Il comportamento senza bersaglio del §6.6 passa dalla volontà: `HoldGroundWill` torna al punto di schieramento, `NecroBoundWill` va alla reliquia, `HungerWill` resta ferma finché M4 non porta il vagabondaggio. Il necromante si riconosce dal tipo `necromancer`.
+- Alternative: volontà come campo enum di `SimUnit`; sottoclassi di `SimUnit` (vietate da `CLAUDE.md`).
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
+
+### D-022 · Dettagli letterali della volontà
+- Sezione GDD: §6.8
+- Ambiguità: punti in cui il testo si applica alla lettera e conviene fissarlo.
+- Scelta:
+  - "Necromante vivo" significa stato diverso da `DEAD`: un necromante con vita 0 influenza ancora fino alla fase 6 del tick (come previsto in T22).
+  - Un'unità è "sotto influenza" in base alla posizione all'inizio del suo passo; il passo viene rifiutato per intero, non accorciato.
+  - Per arretrare basta un nemico vivo entro `KITE_RADIUS`, anche senza vista.
+  - Il passo all'indietro controlla solo la cella di arrivo: un passo diagonale molto vicino a uno spigolo può sfiorare due muri.
+  - Per un senza mente, "già entro il proprio raggio d'attacco" si misura dalla posizione dell'unità a quella del nemico; per notarlo resta necessaria la vista (§6.4).
+  - La fame scende anche per i ratti con IA spenta.
+- Alternative: passo accorciato fino al bordo dell'influenza; arretramento solo da nemici in vista.
+- Cambia l'esito di una battaglia: no (è il testo del §6.8 applicato alla lettera)
 - Stato: confermata
