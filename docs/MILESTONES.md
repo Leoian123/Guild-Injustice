@@ -47,6 +47,13 @@ Una milestone alla volta, con `/milestone M<n>`. Si chiude quando i test indicat
 - **Chiusura**: l'agente consegna istruzioni di collaudo (cosa provare, cosa aspettarsi) e uno screenshot per fase. **La milestone si chiude solo quando l'umano conferma** di aver giocato una partita completa con il mouse.
 - **Da osservare nel collaudo**: con il Blitz senza mente (M3.1), lo sbarramento richiede di piazzarsi esattamente sul percorso dei nemici. Va capito se al giocatore sembra arbitrario.
 
+## M5.1 — Ingombro, pattuglia, guardia
+- **Origine**: collaudo di M5. Le unità si attraversano e nessuno può sbarrare la strada; l'umano chiede ingombro fra nemici, comportamenti diversi per chi attacca e chi difende, pattuglia dei difensori e guardia della reliquia a pagamento.
+- **Prerequisito**: l'umano approva `docs/PROPOSTA_M5.1.md`, eventualmente cambiando i numeri marcati (?). Poi l'agente porta i testi approvati in `docs/GDD_fase1.md` (§2, §6.3, §6.6, §7, §8, §9, §10, §11), `docs/TESTS.md` (T35–T41) e `data/`, e cancella la proposta.
+- **Lavoro**: occupazione delle celle e blocco fra nemici; percorsi che aggirano i nemici, una griglia A* per fazione; razziatori che aprono la strada combattendo quando non c'è altra via; pattuglia dei difensori; guardia (opzione di schieramento, campo `rational`, sovrapprezzo); rianimato in cella occupata; interfaccia di schieramento con l'interruttore "Guardia".
+- **Test**: T35–T41; tutti i test precedenti restano verdi.
+- **Chiusura**: test verdi, poi si riprende il collaudo di M5 con le nuove regole. M5 e M5.1 si chiudono insieme, quando l'umano conferma di aver giocato una partita completa.
+
 ## M6 — Scenario e strumenti
 - **GDD**: §3, §9, §11.
 - **Lavoro**: `ScenarioData` di `temple_01` con le varianti, condizioni di fine battaglia, `tools/sim.sh` completo (validazione, `by_variant`, JSON Lines, riepilogo per combinazione).
