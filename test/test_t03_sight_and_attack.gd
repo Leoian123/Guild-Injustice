@@ -15,4 +15,4 @@ func test_T03_sight_and_attack() -> void:
 
 	undead.position = SimMap.cell_center(Vector2i(8, 1))
 	world.step()
-	assert_int(undead.hp).is_equal(72)
+	assert_int(undead.hp).is_equal(64)

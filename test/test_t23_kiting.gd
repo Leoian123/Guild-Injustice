@@ -9,14 +9,14 @@ func test_T23_archer_backs_away_while_reloading() -> void:
 	TestWorlds.add_anchors(world)
 
 	TestWorlds.run_until(world, 0)
-	assert_int(servant.hp).is_equal(22)
+	assert_int(servant.hp).is_equal(14)
 
 	TestWorlds.run_until(world, 7)
 	assert_float(archer.position.distance_to(servant.position)).is_greater(2.0)
 	assert_vector(archer.facing).is_equal_approx(Vector2(-0.7071, -0.7071), Vector2(0.0001, 0.0001))
 
 	TestWorlds.run_until(world, 29)
-	assert_int(servant.hp).is_equal(22)
+	assert_int(servant.hp).is_equal(14)
 
 	TestWorlds.run_until(world, 30)
-	assert_int(servant.hp).is_equal(14)
+	assert_int(servant.state).is_equal(SimUnit.State.DEAD)

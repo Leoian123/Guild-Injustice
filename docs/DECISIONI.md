@@ -352,3 +352,11 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: nessuna.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-037 · Danno dell'arciere raddoppiato
+- Sezione GDD: §7
+- Ambiguità: nel collaudo l'arciere sembrava non fare danno. Misura: tirava alla cadenza massima, ma con 8 danni ogni 1,5 s aveva il peggior rapporto danno/costo dopo il paladino (17,8 DPS ogni 1000 monete).
+- Scelta: decisione dell'umano, danno 8 → 16 in `data/units/archer.tres` e nella tabella del §7 (DPS 10,7, cioè 35,6 ogni 1000 monete). Aggiornati di conseguenza i valori attesi di T03 (64), T16 (8) e T23 (14, poi `DEAD` al tick 30).
+- Alternative: aspettare il report di bilanciamento di M6.
+- Cambia l'esito di una battaglia: sì
+- Stato: confermata (umano, 7 ottobre 2026)
