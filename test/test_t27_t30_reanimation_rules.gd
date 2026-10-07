@@ -34,7 +34,11 @@ func test_T28_end_of_the_chain() -> void:
 	var expected_hp: Array[int] = [10, 5, 2, 1]
 	for i: int in expected_hp.size():
 		var rise_tick: int = i * 120
+		if rise_tick > 0:
+			TestWorlds.run_until(world, rise_tick - 1)
+		var count_before := world.units.size()
 		TestWorlds.run_until(world, rise_tick)
+		assert_int(world.units.size()).override_failure_message("no rise at tick %d" % rise_tick).is_equal(count_before + 1)
 		var risen := world.units[world.units.size() - 1]
 		assert_int(risen.hp).override_failure_message("rise at tick %d" % rise_tick).is_equal(expected_hp[i])
 		risen.hp = 0

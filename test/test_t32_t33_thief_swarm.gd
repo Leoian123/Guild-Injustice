@@ -44,14 +44,15 @@ func test_T33_swarm_moves_together() -> void:
 	for i: int in rats.size():
 		assert_vector(rats[i].position).is_equal(starts[i])
 
+	# Nobody moved before tick 20, so the vote happens from the start positions.
 	TestWorlds.run_until(world, 20)
 	var direction := _wander(rats[0]).direction
 	assert_int(direction).is_not_equal(-1)
-	for rat: SimUnit in rats:
-		var wander := _wander(rat)
+	for i: int in rats.size():
+		var wander := _wander(rats[i])
 		assert_int(wander.direction).is_equal(direction)
 		assert_bool(wander.has_destination).is_true()
-		assert_float(wander.destination.distance_to(rat.position)).is_less_equal(world.rules.wander_radius)
+		assert_float(wander.destination.distance_to(starts[i])).is_less_equal(world.rules.wander_radius + 0.0001)
 
 
 # Until tick 60 every loss of HP is a multiple of `hit`; after tick 60 the target was hit.
