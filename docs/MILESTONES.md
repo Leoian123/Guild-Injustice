@@ -59,3 +59,11 @@ Una milestone alla volta, con `/milestone M<n>`. Si chiude quando i test indicat
 - **Lavoro**: `ScenarioData` di `temple_01` con le varianti, condizioni di fine battaglia, `tools/sim.sh` completo (validazione, `by_variant`, JSON Lines, riepilogo per combinazione).
 - **Test**: T01, T12, T13, T15.
 - **Chiusura**: test verdi, poi `/balance-report 1-100`. L'agente consegna il report e non modifica dati o regole per migliorare i risultati.
+- **Stato (8 ottobre 2026)**: lavoro e test verdi; il report di bilanciamento si esegue dopo M6.1, perché le regole stanno per cambiare.
+
+## M6.1 — Corpi solidi e catena alimentare
+- **Origine**: richieste dell'umano dell'8 ottobre 2026: ingombro anche fra alleati, come caratteristica opzionale; ratti con danno da sciame, riproduzione solo da sazi; conigli come prede.
+- **Prerequisito**: l'umano approva `docs/PROPOSTA_M6.1.md`. Poi l'agente porta i testi approvati in `docs/GDD_fase1.md`, `docs/TESTS.md` (T46–T54, T08, T09, T31, T37, T41), `data/` e `CLAUDE.md`, e cancella la proposta.
+- **Lavoro**: dato `solid` e costante `BODY_BLOCKING`; occupazione e percorsi con tutte le unità solide; scambio fra alleati; danno dello sciame; riproduzione da sazi; unità `rabbit` con `PreyWill`; prede del ratto affamato; danno minimo dei rianimati; misura delle prestazioni con fino a 150 unità del giocatore.
+- **Test**: T46–T54 e i test rivisti; tutti gli altri restano verdi.
+- **Chiusura**: test verdi; poi `/balance-report 1-100`, che chiude anche M6.
