@@ -20,10 +20,12 @@ func test_T46_allies_are_solid() -> void:
 
 
 func test_T47_allies_swap_in_a_corridor() -> void:
+	# The only way between west and east is the row y = 5 from x = 3 to x = 12.
 	var walls: Array[Vector2i] = []
 	for x: int in range(3, 13):
-		walls.append(Vector2i(x, 4))
-		walls.append(Vector2i(x, 6))
+		for y: int in range(1, 11):
+			if y != 5:
+				walls.append(Vector2i(x, y))
 	var world := TestWorlds.world(1, walls)
 	var a := TestWorlds.spawn(world, &"goblin", PLAYER, Vector2i(11, 5), true)
 	var b := TestWorlds.spawn(world, &"goblin", PLAYER, Vector2i(4, 5), true)
