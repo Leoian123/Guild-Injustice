@@ -411,13 +411,48 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Sezione GDD: §6.3, §6.5, §6.8, §7
 - Ambiguità: dettagli tecnici delle regole di M6.1.
 - Scelta:
-  - Lo scambio avviene solo se l'unità sta per uscire dalla sua cella nel primo tratto del passo e usa il percorso che ignora le unità; le posizioni si scambiano esattamente, l'alleato tiene il proprio orientamento. Il registro "mosso o scambiato in questo tick" (`World._moved`) si azzera a ogni fase 3 ed è fuori dall'hash.
+  - Nello scambio le posizioni si scambiano esattamente e l'alleato tiene il proprio orientamento (tempi e limiti dello scambio: D-045). Il registro "mosso o scambiato in questo tick" (`World._moved`) si azzera a ogni fase 3 ed è fuori dall'hash.
   - Il danno dello sciame è il moltiplicatore di `WanderBehavior` sul danno base del ratto (1 in `rat.tres`), quindi moltiplicatori e riduzioni del §6.1 si applicano come per tutti. Il coniglio ha `WanderBehavior` ma danno 0, quindi non attacca mai.
-  - La caccia ai conigli passa da due agganci della volontà (`can_hunt`, `preferred_target`); il ratto preferisce gli invasori della tana e poi la preda con meno vita, a parità la più vicina e poi l'ID più basso.
+  - La caccia ai conigli passa da due agganci della volontà (`can_hunt`, `preferred_target`) (criterio fra più invasori: D-044).
   - La tana è nella volontà (`HungerWill.den`, `PreyWill.den`) e i neonati la ereditano dal primo genitore (`inherit_den`).
   - L'ordine di riproduzione "prima i ratti, poi i conigli" e i tetti per tipo sono in `BreedAbility.BREEDING_TYPES`.
   - Lo schieramento conta una sola unità solida per cella anche fra le unità già piazzate.
-  - Test corretti durante il lavoro: T47 aveva un corridoio aggirabile (ora chiuso davvero); T48 usava un goblin, che il servo senza mente attacca invece di attraversarlo (ora l'ostacolo è un servo alleato, e il test controlla che non ci sia scambio). Per T46 e T47 è stata verificata la prova inversa: togliendo il blocco fra alleati o lo scambio, il test fallisce.
 - Alternative: nessuna rilevante.
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-043 · Dove nasce il rianimato se la cella del cadavere è occupata
+- Sezione GDD: §8 "Cella occupata", §6.3
+- Ambiguità: il §8 sposta il rianimato solo se sul cadavere c'è un **suo nemico**; il §6.3 (M6.1) dice che due unità solide non stanno mai nella stessa cella, di nessuna fazione.
+- Scelta provvisoria (nel codice): il rianimato si sposta se sul cadavere c'è una qualunque unità solida viva, e nasce nella prima cella calpestabile libera da unità solide (stesso ordine ad anelli, senza RNG). Con `BODY_BLOCKING` spento vale il testo del §8 alla lettera, salvo che oggi cerca comunque una cella senza unità solide.
+- Alternative: a) come sopra, e si aggiorna il testo del §8; b) testo del §8 alla lettera: il rianimato può nascere sopra un alleato solido, unica eccezione al §6.3.
+- Cambia l'esito di una battaglia: sì (posizione del rianimato quando un servo sta sul cadavere)
+- Stato: da confermare
+
+### D-044 · Ratto affamato: quale invasore della tana
+- Sezione GDD: §6.8 punto 2
+- Ambiguità: il GDD dà il criterio di parità per la "preda più facile" (meno vita, poi più vicina, poi ID), ma non fra più invasori della tana.
+- Scelta provvisoria (nel codice): stesso criterio della preda più facile (meno vita, poi più vicino, poi ID più basso).
+- Alternative: a) come sopra; b) l'invasore più vicino alla tana (difende il posto); c) l'invasore più vicino al ratto.
+- Cambia l'esito di una battaglia: sì, poco
+- Stato: da confermare
+
+### D-045 · Tempi e limiti dello scambio fra alleati
+- Sezione GDD: §6.3
+- Ambiguità: il §6.3 dice che due alleati che non hanno altra strada si scambiano, una volta per tick; non dice in quale punto del passo né se lo scambio rispetta i limiti della volontà.
+- Scelta provvisoria (nel codice):
+  - lo scambio scatta solo se il blocco è sul primo tratto del passo (l'unità è ancora nella propria cella); se l'alleato è più avanti, l'unità si ferma al bordo e scambia al tick dopo (al massimo 1 tick, 0,05 s, di ritardo);
+  - lo scambio non chiede il permesso della volontà (`allows_step`) né per chi si muove né per l'alleato: un ratto sazio o un coniglio possono finire una cella oltre il loro guinzaglio, un servo una cella fuori dall'influenza.
+- Alternative: a) come sopra; b) scambio in qualunque punto del passo; c) scambio vietato se porta una delle due unità dove la sua volontà non la farebbe andare.
+- Cambia l'esito di una battaglia: sì, poco
+- Stato: da confermare
+
+### D-046 · T47 e T48 riscritti durante M6.1
+- Sezione GDD: §6.3; `docs/TESTS.md` T47, T48
+- Ambiguità: le versioni della proposta approvata non provavano la regola.
+  - T47 (proposta: muri sulle righe y = 4 e y = 6, atteso "entrambi entro 0,5 dal proprio punto"): il corridoio si poteva aggirare, quindi non c'era scambio; inoltre da tick 60 le unità pattugliano e si allontanano dal punto.
+  - T48 (proposta: goblin nel varco, servo non solido): il servo senza mente attacca il goblin che ha a portata invece di attraversarlo.
+- Scelta provvisoria: T47 chiude tutte le celle con x da 3 a 12 tranne la riga y = 5, atteso al tick 200 "A x > 8, B x < 8"; T48 usa come tappo un servo alleato con IA spenta e controlla che il servo non solido entri nella sua cella senza spostarlo. Prova inversa fatta: senza blocco fra alleati T46 fallisce, senza scambio T47 fallisce.
+- Alternative: a) tenere le nuove versioni; b) riscriverle diversamente.
+- Cambia l'esito di una battaglia: no (sono test), ma servono per chiudere M6.1
+- Stato: da confermare
