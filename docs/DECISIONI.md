@@ -406,3 +406,18 @@ Se "Cambia l'esito" è "sì", lo stato iniziale è sempre `da confermare`.
 - Alternative: validare ogni seed solo al momento di eseguirlo (output parziale prima dell'errore).
 - Cambia l'esito di una battaglia: no
 - Stato: confermata
+
+### D-042 · Dettagli dei corpi solidi e della catena alimentare
+- Sezione GDD: §6.3, §6.5, §6.8, §7
+- Ambiguità: dettagli tecnici delle regole di M6.1.
+- Scelta:
+  - Lo scambio avviene solo se l'unità sta per uscire dalla sua cella nel primo tratto del passo e usa il percorso che ignora le unità; le posizioni si scambiano esattamente, l'alleato tiene il proprio orientamento. Il registro "mosso o scambiato in questo tick" (`World._moved`) si azzera a ogni fase 3 ed è fuori dall'hash.
+  - Il danno dello sciame è il moltiplicatore di `WanderBehavior` sul danno base del ratto (1 in `rat.tres`), quindi moltiplicatori e riduzioni del §6.1 si applicano come per tutti. Il coniglio ha `WanderBehavior` ma danno 0, quindi non attacca mai.
+  - La caccia ai conigli passa da due agganci della volontà (`can_hunt`, `preferred_target`); il ratto preferisce gli invasori della tana e poi la preda con meno vita, a parità la più vicina e poi l'ID più basso.
+  - La tana è nella volontà (`HungerWill.den`, `PreyWill.den`) e i neonati la ereditano dal primo genitore (`inherit_den`).
+  - L'ordine di riproduzione "prima i ratti, poi i conigli" e i tetti per tipo sono in `BreedAbility.BREEDING_TYPES`.
+  - Lo schieramento conta una sola unità solida per cella anche fra le unità già piazzate.
+  - Test corretti durante il lavoro: T47 aveva un corridoio aggirabile (ora chiuso davvero); T48 usava un goblin, che il servo senza mente attacca invece di attraversarlo (ora l'ostacolo è un servo alleato, e il test controlla che non ci sia scambio). Per T46 e T47 è stata verificata la prova inversa: togliendo il blocco fra alleati o lo scambio, il test fallisce.
+- Alternative: nessuna rilevante.
+- Cambia l'esito di una battaglia: no
+- Stato: confermata
