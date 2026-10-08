@@ -79,9 +79,11 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 
 ### 6.3 Movimento
 - AStarGrid2D, 8 direzioni, senza tagliare gli angoli (diagonale solo se le due celle ortogonali sono libere).
-- **Ingombro.** Ogni unità viva occupa la cella che contiene la sua posizione. Un'unità non può entrare in una cella occupata da un'unità **nemica** viva: il passo si ferma al bordo di quella cella. **Fra alleati non c'è ingombro**: si attraversano e possono stare nella stessa cella.
-- **Percorso.** A* considera come ostacoli, oltre ai muri, le celle occupate da nemici all'inizio della fase 3, salvo la cella di destinazione. Così chi si muove aggira i nemici che trova sulla strada. Se un percorso così non esiste, l'unità usa il percorso che ignora le unità e si ferma al primo nemico che la blocca.
-- **Razziatori.** Un'unità che senza bersaglio marcia verso la reliquia (oggi: ogni unità con `NecroBoundWill`) evita la mischia: cerca sempre prima il percorso che aggira i nemici. Se non esiste, il primo nemico che le sbarra il percorso diventa un bersaglio accettato, anche se la sua volontà non lo accetterebbe, e la strada se la apre combattendo.
+- **Corpi solidi.** Ogni unità ha il dato `solid` (vero per default). Un'unità solida viva occupa la cella che contiene la sua posizione. Un'unità solida non può entrare in una cella occupata da un'altra unità solida viva, **di qualunque fazione**: il passo si ferma al bordo di quella cella. Un'unità non solida attraversa tutte le celle e non blocca nessuno. La costante `BODY_BLOCKING` (vero) accende l'ingombro; se è falsa nessuno blocca nessuno.
+- **Percorso.** A* considera come ostacoli, oltre ai muri, le celle occupate da unità solide all'inizio della fase 3, salvo la cella di partenza e quella di destinazione. Così chi si muove aggira chi trova sulla strada. Se un percorso così non esiste, l'unità usa il percorso che ignora le unità.
+- **Bloccato da un nemico.** Chi usa il percorso che ignora le unità si ferma al primo nemico. Un razziatore, cioè un'unità che senza bersaglio marcia verso la reliquia (oggi: ogni unità con `NecroBoundWill`), cerca sempre prima il percorso che aggira; se non esiste, il primo nemico che le sbarra il percorso diventa un bersaglio accettato, anche se la sua volontà non lo accetterebbe, e la strada se la apre combattendo.
+- **Bloccato da un alleato: scambio.** Se un'unità che usa il percorso che ignora le unità sta per entrare nella cella di un alleato solido, i due **si scambiano di posto**: ognuno prende la posizione dell'altro, nello stesso tick. Lo scambio avviene al massimo una volta per unità per tick, e solo se l'alleato non si è già mosso o scambiato in quel tick; altrimenti il passo si ferma al bordo.
+- **Schieramento.** Al massimo un'unità solida per cella.
 - **Difensori.** Le unità che tengono una posizione si mettono in mezzo e attaccano chi notano (§6.4, §6.8).
 - Velocità in celle al secondo, quindi `velocità / 20` celle per tick lungo il percorso.
 
@@ -92,6 +94,7 @@ Fasi in ordine; in ogni fase le unità si processano per ID crescente.
 
 ### 6.5 Attacco e orientamento
 - Si attacca se il bersaglio è entro il raggio d'attacco e in vista. Il **tipo d'attacco** è un dato dell'unità, indipendente dal raggio: `melee` (corpo a corpo) o `ranged` (a distanza). Un'unità con la lancia può avere raggio > 1 ed essere `melee`.
+- Un'unità con danno 0 non attacca. Un rianimato attacca sempre, con danno mai inferiore a 1.
 - **Orientamento iniziale**: unità del giocatore rivolte nella direzione opposta alla reliquia (sulla cella della reliquia, verso sud); unità nemiche rivolte verso la reliquia. Da ferma, un'unità mantiene l'ultimo orientamento.
 - **Alle spalle**: nella fotografia, `dot(orientamento_bersaglio, pos_attaccante − pos_bersaglio) < 0`. A distanza 0 non è mai alle spalle.
 
@@ -121,7 +124,11 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 **Fame del ratto: lo spazzino.** Mordere non sazia: sazia mangiare un cadavere.
 - Ogni ratto nasce **sazio** (schierato o nato in battaglia) per `RAT_DIGEST_TICKS` tick. Il timer scende nella fase 1; a 0 il ratto è **affamato**.
 - **Sazio**: non ha bersaglio; vaga a sciame restando vicino alla sua tana (§7) e si riproduce.
-- **Affamato**: cerca cibo. Se nota un cadavere con integrità ≥ 1 (entro il proprio raggio d'ingaggio e in vista; il più vicino, a parità l'ID più basso dell'unità morta) ci va e non accetta bersagli. Altrimenti accetta qualunque nemico notato e vaga a sciame senza limiti.
+- **Affamato**: cerca cibo, in quest'ordine:
+  1. un **cadavere** con integrità ≥ 1 entro il proprio raggio d'ingaggio e in vista (il più vicino, a parità l'ID più basso dell'unità morta): ci va e non accetta bersagli;
+  2. un **invasore della tana**: un nemico notato entro `SWARM_LEASH_RADIUS` dalla tana;
+  3. la **preda più facile**: fra i nemici notati e i **conigli** notati (alleati compresi), quello con meno vita; a parità il più vicino, poi l'ID più basso.
+  Senza prede vaga a sciame senza limiti.
 - **Pasto** (fase 7, dopo la rianimazione): un ratto affamato entro 1 cella dal suo cadavere lo mangia: l'integrità del cadavere scende di 1 e il ratto torna sazio per `RAT_DIGEST_TICKS` tick. I ratti mangiano in ordine di ID; a integrità 0 il cadavere sparisce.
 - Un ratto rianimato non ha fame: ha `NecroBoundWill`.
 
@@ -137,7 +144,7 @@ Ogni unità ha esattamente un componente di volontà. La volontà decide quali n
 ## 7. Unità del giocatore
 Budget dello scenario: **2457**.
 
-**Schieramento.** Più unità alleate possono stare nella stessa cella; nessuna unità del giocatore può essere schierata in una cella con un nemico visibile.
+**Schieramento.** Al massimo un'unità solida per cella (§6.3); nessuna unità del giocatore può essere schierata in una cella con un nemico visibile.
 
 **Guardia della reliquia.** Allo schieramento il giocatore può comprare un'unità **razionale** come **guardia**, pagando `ceil(costo × (1 + GUARD_COST_RATIO))`. "La reliquia è più importante della tua vita": la guardia
 - ha come posto la **stanza dell'oggetto sorvegliato**: per la reliquia il Cuore (le stanze sono dati dello scenario, §4). Ovunque la si schieri, il suo compito è raggiungere la stanza, esplorando la mappa lungo la strada;
@@ -150,7 +157,8 @@ Budget dello scenario: **2457**.
 
 | Unità | ID | Costo | Vita | Danno | Int. att. | Raggio att. | Tipo att. | Vel. | Ingaggio | Insegue | Razionale | Integrità | Volontà | Abilità |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Ratto | `rat` | 158 | 20 | 3 | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | 0 | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Ratto | `rat` | 100 | 20 | 1 × sciame | 0,8 s | 1 | `melee` | 3,0 | 4 | — | no | 0 | `HungerWill` | `WanderBehavior`, `BreedAbility` |
+| Coniglio | `rabbit` | 100 | 5 | 0 | 1,0 s | 1 | `melee` | 3,5 | 0 | — | no | 1 | `PreyWill` | `WanderBehavior`, `BreedAbility` |
 | Goblin | `goblin` | 254 | 45 | 7 | 1,0 s | 1 | `melee` | 2,5 | 5 | 6 | sì | 1 | `HoldGroundWill` | `PackCourageAbility` |
 | Arciere | `archer` | 300 | 35 | 12 | 1,5 s | 6 | `ranged` | 1,8 | 7 | 4 | sì | 1 | `HoldGroundWill` | `PointBlankPenalty` |
 | Ladro | `thief` | 420 | 40 | 6 | 1,0 s | 1 | `melee` | 3,2 | 7 | 8 | sì | 1 | `HoldGroundWill` | `BackstabAbility` |
@@ -159,8 +167,15 @@ Budget dello scenario: **2457**.
 "Insegue" è `chase_radius`, in celle (§6.8).
 
 **Ratto, l'animale tollerato.** Il giocatore sceglie solo dove liberarli: non tengono la posizione, ma il punto in cui sono liberati è la loro **tana**; i neonati prendono la tana del primo genitore. Da sazi restano vicino alla tana a riprodursi, da affamati escono a cercare cibo (§6.8).
-- *Vagabondaggio a sciame*: i ratti del giocatore con `WanderBehavior`, vivi e senza bersaglio (sazi compresi), formano sciami. Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Per un ratto **sazio** la meta si accorcia inoltre verso la tana fino a stare entro `SWARM_LEASH_RADIUS` da essa. Un ratto che ottiene un bersaglio, o che va a mangiare, abbandona la meta.
-- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di ratti del giocatore idonei a distanza ≤ `BREED_RADIUS` genera un ratto. Idoneo = vivo ed età ≥ `NEWBORN_COOLDOWN_TICKS`. Coppie processate in ordine (ID minore, poi ID maggiore). Le nascite si fermano quando i ratti vivi del giocatore **raggiungono** `RAT_CAP`. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Qui "libera" vale anche per gli alleati, per distribuire le nascite; per il resto valgono le regole d'ingombro del §6.3.
+- *Danno dello sciame*: il danno del ratto è il numero di ratti vivi del suo sciame, lui compreso, contati nella fotografia (ratti del giocatore collegati a catena entro `SWARM_RADIUS`). Da solo fa 1, in uno sciame di 10 fa 10; moltiplicatori e riduzioni del §6.1 si applicano dopo.
+- *Vagabondaggio a sciame*: le unità del giocatore con `WanderBehavior`, vive e senza bersaglio (ratti sazi compresi), formano sciami **con le unità dello stesso tipo** (ratti con ratti, conigli con conigli). Due ratti sono nello stesso sciame se distano ≤ `SWARM_RADIUS`, anche attraverso altri ratti (a catena); un ratto isolato è uno sciame da solo. Ai tick multipli di `WANDER_PERIOD_TICKS`, in ogni sciame (sciami in ordine di ID più basso) ogni ratto vota con l'RNG, in ordine di ID, una delle 8 direzioni (N, NE, E, SE, S, SO, O, NO). Vince la più votata; a parità, quella votata dal ratto con ID più basso fra le pari. Ogni ratto dello sciame va verso la propria posizione + direzione × `WANDER_RADIUS`, accorciando il tratto se un muro taglia la linea, e ci resta fino al voto successivo. Per un ratto **sazio** la meta si accorcia inoltre verso la tana fino a stare entro `SWARM_LEASH_RADIUS` da essa. Un ratto che ottiene un bersaglio, o che va a mangiare, abbandona la meta.
+- *Riproduzione*: ai tick multipli di `BREED_PERIOD_TICKS`, ogni coppia di unità del giocatore dello stesso tipo con `BreedAbility`, idonee e a distanza ≤ `BREED_RADIUS`, genera un'unità dello stesso tipo. Idoneo = vivo, età ≥ `NEWBORN_COOLDOWN_TICKS` e, per un ratto, **sazio**. Coppie processate in ordine (ID minore, poi ID maggiore), prima i ratti e poi i conigli. Le nascite di un tipo si fermano quando le sue unità vive del giocatore **raggiungono** il tetto: `RAT_CAP` per i ratti, `RABBIT_CAP` per i conigli. Il neonato nasce al centro di una cella **libera** del quadrato 3×3 intorno alla cella del punto medio della coppia, scelta con l'RNG fra le libere (in ordine di riga e colonna). Libera = calpestabile e senza unità vive. Se il 3×3 non ha celle libere, il neonato nasce nell'anello successivo (il bordo del 5×5), poi in quello dopo, e così via. Qui "libera" vale anche per gli alleati, per distribuire le nascite; per il resto valgono le regole d'ingombro del §6.3.
+
+**Coniglio, la preda.** Cibo per i ratti e carne per il necromante.
+- `PreyWill`: non accetta mai bersagli; senza bersaglio vaga a sciame con gli altri conigli, sempre legato alla sua tana come un ratto sazio (la tana è il punto di rilascio; i neonati prendono quella del primo genitore).
+- Danno 0: non attacca. Integrità 1: un morso per un ratto, oppure un rianimato con 25 di vita e danno 1.
+- Si riproduce a coppie come i ratti (tetto `RABBIT_CAP`), senza condizioni di fame.
+- Conta come unità del giocatore per l'annientamento (§3) e per la contesa della reliquia.
 
 **Goblin, coraggio di gruppo.**
 - Con almeno `COURAGE_MIN_ALLIES` altri goblin entro `COURAGE_RADIUS`: danno × (1 + `COURAGE_BONUS`).
@@ -230,7 +245,8 @@ Le unità sono elencate nell'ordine di assegnazione degli ID.
 | `WANDER_PERIOD_TICKS` | 20 | | `SURROUND_RADIUS` | 1,5 |
 | `WANDER_RADIUS` | 3,0 | | `REANIMATE_COOLDOWN_TICKS` | 120 |
 | `BREED_PERIOD_TICKS` | 100 | | `REANIMATE_RADIUS` | 6,0 |
-| `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 24 |
+| `BREED_RADIUS` | 3,0 | | `RAT_CAP` | 50 |
+| `RABBIT_CAP` | 100 | | `BODY_BLOCKING` | vero |
 | `NEWBORN_COOLDOWN_TICKS` | 100 | | `KITE_RADIUS` | 2,0 |
 | `SWARM_RADIUS` | 3,0 | | `GUARD_COST_RATIO` | 0,10 |
 | `PATROL_PERIOD_TICKS` | 60 | | `PATROL_RADIUS` | 2,0 |
@@ -246,7 +262,7 @@ Wrapper bash di `tools/run_sim.gd` (estende `SceneTree`, argomenti da `OS.get_cm
 
 Ogni unità della strategia può avere `"guard": true` (§7).
 
-**Validazione**: costo ≤ budget (sovrapprezzo delle guardie compreso), al massimo `REVEALS` rivelazioni, ogni unità su cella calpestabile e visibile (§5.1) e senza nemici, guardie solo per unità razionali. Se fallisce: codice di uscita 2 e motivo su stderr.
+**Validazione**: costo ≤ budget (sovrapprezzo delle guardie compreso), al massimo `REVEALS` rivelazioni, ogni unità su cella calpestabile e visibile (§5.1) e senza nemici, al massimo un'unità solida per cella, guardie solo per unità razionali. Se fallisce: codice di uscita 2 e motivo su stderr.
 
 **Uscita**: una riga JSON per battaglia nel file `--out` (JSON Lines). Su stdout solo un riepilogo leggibile, perché Godot vi scrive anche il proprio banner.
 ```json

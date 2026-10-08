@@ -35,8 +35,10 @@ var _alive_by_faction: Array = [[], []]
 var necromancers: Array[SimUnit] = []
 ## Cells occupied by living units of each faction at the start of phase 3, for paths (GDD §6.3).
 var _occupied: Array[Dictionary] = [{}, {}]
-## Whether the last _move_towards had to ignore enemy units to find a path.
+## Whether the last _move_towards had to ignore units to find a path.
 var _last_path_ignored_units: bool = false
+## Units that moved or swapped during this phase 3 (GDD §6.3: one swap per unit per tick).
+var _moved: Dictionary = {}
 ## Damage per unit index, filled in phase 4 and applied in phase 5.
 var _pending_damage: PackedInt32Array = PackedInt32Array()
 
@@ -76,8 +78,11 @@ func reanimate(corpse: SimCorpse) -> SimUnit:
 	unit.abilities = abilities
 	unit.will = NecroBoundWill.new()
 	unit.reanimated = true
-	if is_enemy_cell(Vector2i(corpse.position.floor()), unit.faction):
-		unit.position = SimMap.cell_center(_first_cell_without_enemies(Vector2i(corpse.position.floor()), unit.faction))
+	# A risen unit always attacks, with at least 1 damage (GDD §6.5).
+	unit.damage = maxi(1, unit.damage)
+	var corpse_cell := Vector2i(corpse.position.floor())
+	if blocking_unit(corpse_cell, unit) != null:
+		unit.position = SimMap.cell_center(_first_free_cell(corpse_cell, unit))
 		unit.home = unit.position
 	_add_unit(unit)
 	corpses.erase(corpse)
@@ -115,8 +120,28 @@ func enemy_cells(faction: SimUnit.Faction) -> Dictionary:
 	return _occupied[SimUnit.Faction.ENEMY if faction == SimUnit.Faction.PLAYER else SimUnit.Faction.PLAYER]
 
 
-# First walkable cell without enemies of `faction`, ring by ring around `center`, row by row.
-func _first_cell_without_enemies(center: Vector2i, faction: SimUnit.Faction) -> Vector2i:
+## The living solid unit (lowest ID) that keeps `unit` out of `cell` right now, or null
+## (GDD §6.3: solid units never share a cell; BODY_BLOCKING off or a non-solid unit: no one).
+func blocking_unit(cell: Vector2i, unit: SimUnit) -> SimUnit:
+	if not rules.body_blocking or not unit.solid:
+		return null
+	for other: SimUnit in units:
+		if other != unit and other.is_alive() and other.solid and Vector2i(other.position.floor()) == cell:
+			return other
+	return null
+
+
+## Cells held by solid units at the start of phase 3 that `unit` must go around (GDD §6.3).
+func blocked_cells(unit: SimUnit) -> Dictionary:
+	if not rules.body_blocking or not unit.solid:
+		return {}
+	var cells: Dictionary = _occupied[SimUnit.Faction.PLAYER].duplicate()
+	cells.merge(_occupied[SimUnit.Faction.ENEMY])
+	return cells
+
+
+# First walkable cell `unit` may stand in, ring by ring around `center`, row by row.
+func _first_free_cell(center: Vector2i, unit: SimUnit) -> Vector2i:
 	var max_ring: int = maxi(map.width, map.height)
 	for ring: int in range(1, max_ring + 1):
 		for y: int in range(center.y - ring, center.y + ring + 1):
@@ -124,7 +149,7 @@ func _first_cell_without_enemies(center: Vector2i, faction: SimUnit.Faction) -> 
 				if maxi(absi(x - center.x), absi(y - center.y)) != ring:
 					continue
 				var cell := Vector2i(x, y)
-				if map.is_walkable(cell) and not is_enemy_cell(cell, faction):
+				if map.is_walkable(cell) and blocking_unit(cell, unit) == null:
 					return cell
 	return center
 
@@ -167,7 +192,7 @@ func state_hash() -> String:
 # Fixed inputs, data derived from them and the per-tick damage buffer are not state.
 func hash_excluded() -> PackedStringArray:
 	return PackedStringArray(["rules", "map", "pathfinder", "relic_room", "necromancers", "_alive_by_faction", "_pending_damage", "events",
-		"_occupied", "_last_path_ignored_units"])
+		"_occupied", "_last_path_ignored_units", "_moved"])
 
 
 ## A unit notices living enemies within its engage radius and in sight (GDD §6.4).
@@ -240,6 +265,9 @@ func _phase_targets() -> void:
 
 
 func _is_valid_target(unit: SimUnit, other: SimUnit) -> bool:
+	if other != null and other != unit and other.faction == unit.faction:
+		# Rats hunt rabbits (GDD §7).
+		return unit.will.can_hunt(self, unit, other)
 	if not notices(unit, other):
 		return false
 	return unit.will.accepts(self, unit, other) or other.id == unit.blocker_id
@@ -253,10 +281,16 @@ func _choose_target(unit: SimUnit) -> int:
 	for other: SimUnit in _alive_by_faction[enemy_faction]:
 		if _is_valid_target(unit, other):
 			candidates.append(other)
+	for other: SimUnit in _alive_by_faction[unit.faction]:
+		if other != unit and unit.will.can_hunt(self, unit, other):
+			candidates.append(other)
 	for ability: SimAbility in unit.abilities:
 		var preferred := ability.preferred_target(self, unit, candidates)
 		if preferred != null:
 			return preferred.id
+	var chosen := unit.will.preferred_target(self, unit, candidates)
+	if chosen != null:
+		return chosen.id
 	var best: SimUnit = null
 	var best_distance: float = 0.0
 	for other: SimUnit in candidates:
@@ -270,6 +304,7 @@ func _choose_target(unit: SimUnit) -> int:
 # Phase 3: movement along A* at speed / TICK_RATE cells per tick (GDD §6.3, §6.6, §6.8).
 func _phase_movement() -> void:
 	_snapshot_occupancy()
+	_moved = {}
 	WanderBehavior.run_swarms(self)
 	HoldGroundWill.run_patrols(self)
 	for unit: SimUnit in units:
@@ -360,7 +395,7 @@ func _kite_step(unit: SimUnit, threat: SimUnit) -> bool:
 	var cell := Vector2i(position.floor())
 	if map.is_wall(cell):
 		return false
-	if cell != Vector2i(unit.position.floor()) and is_enemy_cell(cell, unit.faction):
+	if cell != Vector2i(unit.position.floor()) and blocking_unit(cell, unit) != null:
 		# Enemies block: the step stops at the border of their cell (GDD §6.3).
 		position = _clip_to_cell(unit.position, position)
 		if position == unit.position:
@@ -369,6 +404,7 @@ func _kite_step(unit: SimUnit, threat: SimUnit) -> bool:
 		return false
 	unit.position = position
 	unit.facing = heading
+	_moved[unit.id] = true
 	return true
 
 
@@ -405,8 +441,15 @@ func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
 		heading = (waypoint - position) / distance
 		var next := waypoint if distance <= budget else position + heading * budget
 		var next_cell := Vector2i(next.floor())
-		if next_cell != Vector2i(position.floor()) and is_enemy_cell(next_cell, unit.faction):
-			# Enemies block: stop at the border of their cell (GDD §6.3).
+		var blocker: SimUnit = null
+		if next_cell != Vector2i(position.floor()):
+			blocker = blocking_unit(next_cell, unit)
+		if blocker != null:
+			if _can_swap(unit, blocker) and position == unit.position:
+				# Allies with no way around swap places (GDD §6.3).
+				_swap(unit, blocker, heading)
+				return true
+			# Solid units block: stop at the border of their cell (GDD §6.3).
 			position = _clip_to_cell(position, next)
 			break
 		budget -= position.distance_to(next)
@@ -419,7 +462,23 @@ func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
 		return false
 	unit.position = position
 	unit.facing = heading
+	_moved[unit.id] = true
 	return true
+
+
+# A swap needs an ally, a unit-blind path (no way around) and neither unit moved this tick.
+func _can_swap(unit: SimUnit, ally: SimUnit) -> bool:
+	return ally.faction == unit.faction and _last_path_ignored_units \
+		and not _moved.has(unit.id) and not _moved.has(ally.id)
+
+
+func _swap(unit: SimUnit, ally: SimUnit, heading: Vector2) -> void:
+	var position := unit.position
+	unit.position = ally.position
+	ally.position = position
+	unit.facing = heading
+	_moved[unit.id] = true
+	_moved[ally.id] = true
 
 
 # A* around the cells held by enemies at the start of phase 3; if there is no such path,
@@ -427,7 +486,7 @@ func _move_towards(unit: SimUnit, destination: Vector2) -> bool:
 func _path_for(unit: SimUnit, destination: Vector2) -> Array[Vector2i]:
 	var from := Vector2i(unit.position.floor())
 	var to := Vector2i(destination.floor())
-	var path := pathfinder.find_path_avoiding(from, to, enemy_cells(unit.faction))
+	var path := pathfinder.find_path_avoiding(from, to, blocked_cells(unit))
 	if path.is_empty():
 		path = pathfinder.find_path(from, to)
 		_last_path_ignored_units = not path.is_empty()
@@ -467,7 +526,7 @@ static func _clip_to_cell(from: Vector2, to: Vector2) -> Vector2:
 func _snapshot_occupancy() -> void:
 	_occupied = [{}, {}]
 	for unit: SimUnit in units:
-		if unit.is_alive():
+		if unit.is_alive() and unit.solid:
 			_occupied[unit.faction][Vector2i(unit.position.floor())] = true
 
 
@@ -478,6 +537,9 @@ func _phase_attacks(snapshot: SimSnapshot) -> void:
 	var attackers: Array[SimUnit] = []
 	for unit: SimUnit in units:
 		if not snapshot.is_alive(unit.id) or unit.attack_cd > 0 or unit.state == SimUnit.State.FLEE:
+			continue
+		# A unit with no damage never attacks (GDD §6.5).
+		if unit.damage <= 0:
 			continue
 		if _attack_blocked(unit):
 			continue

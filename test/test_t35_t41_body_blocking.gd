@@ -42,20 +42,6 @@ func test_T36_raider_opens_the_way_by_fighting() -> void:
 	assert_int(goblin.hp).is_less(45)
 
 
-func test_T37_allies_pass_through() -> void:
-	var world := TestWorlds.world(1)
-	var walker := TestWorlds.spawn(world, &"goblin", PLAYER, Vector2i(5, 5), true)
-	TestWorlds.spawn(world, &"goblin", PLAYER, Vector2i(7, 5), false)
-	TestWorlds.spawn(world, &"undead", ENEMY, Vector2i(9, 5), false)
-	TestWorlds.add_anchors(world)
-	var crossed: bool = false
-	while world.tick <= 30 and not world.is_over():
-		world.step()
-		if Vector2i(walker.position.floor()) == Vector2i(7, 5):
-			crossed = true
-	assert_bool(crossed).is_true()
-
-
 func test_T38_patrol() -> void:
 	var world := TestWorlds.world(1)
 	var goblin := TestWorlds.spawn(world, &"goblin", PLAYER, Vector2i(5, 5), true)
@@ -92,7 +78,7 @@ func test_T39_guard() -> void:
 
 func test_T40_guard_cost() -> void:
 	var rules := TestWorlds.rules()
-	assert_int(DeploymentPlan.unit_cost(&"rat", true, rules)).is_equal(174)
+	assert_int(DeploymentPlan.unit_cost(&"rat", true, rules)).is_equal(110)
 	assert_int(DeploymentPlan.unit_cost(&"paladin", true, rules)).is_equal(2090)
 	var scenario := SimScenario.load_scenario(&"temple_01")
 	var world := TestWorlds.world(1)

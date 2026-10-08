@@ -10,6 +10,12 @@ var digest_ticks: int = 0
 var den: Vector2 = Vector2.ZERO
 ## Unit ID of the corpse the rat is going to eat, -1 if none.
 var meal_id: int = -1
+## SWARM_LEASH_RADIUS, copied at spawn: the den's reach for invaders. A fixed input.
+var _leash_radius: float = 0.0
+
+
+func hash_excluded() -> PackedStringArray:
+	return PackedStringArray(["_leash_radius"])
 
 
 func is_sated() -> bool:
@@ -19,6 +25,7 @@ func is_sated() -> bool:
 func on_spawn(world: World, unit: SimUnit) -> void:
 	digest_ticks = world.rules.rat_digest_ticks
 	den = unit.position
+	_leash_radius = world.rules.swarm_leash_radius
 
 
 # Phase 1: digestion, then a hungry rat looks for food (current positions).
@@ -41,6 +48,37 @@ func accepts(world: World, _unit: SimUnit, _enemy: SimUnit) -> bool:
 	return not is_sated() and world.corpse_of(meal_id) == null
 
 
+func can_hunt(world: World, unit: SimUnit, ally: SimUnit) -> bool:
+	if is_sated() or world.corpse_of(meal_id) != null:
+		return false
+	if not ally.is_alive() or not ally.will is PreyWill:
+		return false
+	if unit.position.distance_to(ally.position) > unit.engage_radius:
+		return false
+	return SimVision.has_line_of_sight(world.map, unit.position, ally.position)
+
+
+## Hungry (GDD §6.8): first an enemy that invaded the den, then the easiest prey;
+## each time the one with less HP, then the nearest, then the lower ID.
+func preferred_target(_world: World, unit: SimUnit, candidates: Array[SimUnit]) -> SimUnit:
+	if is_sated() or candidates.is_empty():
+		return null
+	var invaders: Array[SimUnit] = []
+	for candidate: SimUnit in candidates:
+		if candidate.is_enemy_of(unit) and den.distance_to(candidate.position) <= _leash_radius:
+			invaders.append(candidate)
+	return _easiest(unit, invaders if not invaders.is_empty() else candidates)
+
+
+func leash_point() -> Variant:
+	return den if is_sated() else null
+
+
+func inherit_den(parent_will: SimWill) -> void:
+	if parent_will is HungerWill:
+		den = (parent_will as HungerWill).den
+
+
 func idle_destination(world: World, _unit: SimUnit) -> Variant:
 	var corpse := world.corpse_of(meal_id)
 	return corpse.position if corpse != null else null
@@ -61,6 +99,19 @@ static func run_meals(world: World) -> void:
 		world.eat(corpse)
 		will.digest_ticks = world.rules.rat_digest_ticks
 		will.meal_id = -1
+
+
+static func _easiest(unit: SimUnit, pool: Array[SimUnit]) -> SimUnit:
+	var best: SimUnit = null
+	var best_distance: float = 0.0
+	for candidate: SimUnit in pool:
+		var distance := unit.position.distance_squared_to(candidate.position)
+		if best == null or candidate.hp < best.hp \
+				or (candidate.hp == best.hp and distance < best_distance) \
+				or (candidate.hp == best.hp and distance == best_distance and candidate.id < best.id):
+			best = candidate
+			best_distance = distance
+	return best
 
 
 # Nearest corpse with integrity ≥ 1 within the engage radius and in sight; ties: lower unit ID.

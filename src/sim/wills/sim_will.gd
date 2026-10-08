@@ -14,6 +14,8 @@ static func create(will_name: StringName) -> SimWill:
 			return HungerWill.new()
 		&"NecroBoundWill":
 			return NecroBoundWill.new()
+		&"PreyWill":
+			return PreyWill.new()
 	push_error("SimWill: unknown will '%s'" % will_name)
 	return null
 
@@ -36,6 +38,26 @@ func accepts(_world: World, _unit: SimUnit, _enemy: SimUnit) -> bool:
 ## Phase 3: where the unit goes without a target; null = it stays.
 func idle_destination(_world: World, _unit: SimUnit) -> Variant:
 	return null
+
+
+## Phase 2: whether the unit may also hunt this ally (rats hunt rabbits, GDD §7).
+func can_hunt(_world: World, _unit: SimUnit, _ally: SimUnit) -> bool:
+	return false
+
+
+## Phase 2: preferred target among the acceptable ones; null = common rule.
+func preferred_target(_world: World, _unit: SimUnit, _candidates: Array[SimUnit]) -> SimUnit:
+	return null
+
+
+## Phase 3: point a swarm member's wander leg is leashed to, or null.
+func leash_point() -> Variant:
+	return null
+
+
+## Births: a newborn takes its den from its first parent.
+func inherit_den(_parent_will: SimWill) -> void:
+	pass
 
 
 ## Phase 3: called for a unit that has a target, before it moves.

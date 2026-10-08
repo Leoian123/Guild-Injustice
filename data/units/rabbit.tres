@@ -4,14 +4,15 @@
 
 [resource]
 script = ExtResource("1_unit")
-unit_type = &"rat"
+unit_type = &"rabbit"
 cost = 100
-max_hp = 20
-damage = 1
-attack_interval = 0.8
+max_hp = 5
+damage = 0
+attack_interval = 1.0
 attack_range = 1.0
-speed = 3.0
-engage_radius = 4.0
+speed = 3.5
+engage_radius = 0.0
 chase_radius = 0.0
-will = &"HungerWill"
+will = &"PreyWill"
+integrity = 1
 abilities = Array[StringName]([&"WanderBehavior", &"BreedAbility"])

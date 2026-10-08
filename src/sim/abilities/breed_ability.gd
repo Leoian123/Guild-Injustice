@@ -4,26 +4,44 @@ extends SimAbility
 ## world (run_breeding); the component only marks who can breed.
 
 
-## At ticks that are multiples of BREED_PERIOD_TICKS (> 0): every pair of eligible player
-## rats within BREED_RADIUS, in (lower ID, higher ID) order, makes one rat, until the living
-## player rats reach RAT_CAP. Eligible = alive, with BreedAbility, age ≥ NEWBORN_COOLDOWN_TICKS.
+## Breeding order and population caps (GDD §7): rats first, then rabbits.
+const BREEDING_TYPES: Array[StringName] = [&"rat", &"rabbit"]
+
+
+## At ticks that are multiples of BREED_PERIOD_TICKS (> 0), for each type in order: every pair
+## of eligible player units of that type within BREED_RADIUS, in (lower ID, higher ID) order,
+## makes one unit, until the living player units of that type reach their cap. Eligible = alive,
+## with BreedAbility, age ≥ NEWBORN_COOLDOWN_TICKS and, for a rat, sated (GDD §7).
 static func run_breeding(world: World) -> void:
 	var rules := world.rules
 	if world.tick == 0 or world.tick % rules.breed_period_ticks != 0:
 		return
+	for unit_type: StringName in BREEDING_TYPES:
+		_breed_type(world, unit_type, _cap_of(rules, unit_type))
+
+
+static func _cap_of(rules: RulesData, unit_type: StringName) -> int:
+	return rules.rabbit_cap if unit_type == &"rabbit" else rules.rat_cap
+
+
+static func _breed_type(world: World, unit_type: StringName, cap: int) -> void:
+	var rules := world.rules
 	var parents: Array[SimUnit] = []
-	var rat_count: int = 0
+	var count: int = 0
 	for unit: SimUnit in world.units:
-		if not unit.is_alive() or unit.faction != SimUnit.Faction.PLAYER:
+		if not unit.is_alive() or unit.faction != SimUnit.Faction.PLAYER or unit.unit_type != unit_type:
 			continue
 		if not unit.has_ability(BreedAbility):
 			continue
-		rat_count += 1
-		if unit.age >= rules.newborn_cooldown_ticks:
-			parents.append(unit)
+		count += 1
+		if unit.age < rules.newborn_cooldown_ticks:
+			continue
+		if unit.will is HungerWill and not (unit.will as HungerWill).is_sated():
+			continue
+		parents.append(unit)
 	for i: int in parents.size():
 		for j: int in range(i + 1, parents.size()):
-			if rat_count >= rules.rat_cap:
+			if count >= cap:
 				return
 			var first := parents[i]
 			var second := parents[j]
@@ -38,9 +56,8 @@ static func run_breeding(world: World) -> void:
 			# Test mode (docs/TESTS.md): a newborn of AI-off parents stays AI-off. Always true in play.
 			newborn.ai_enabled = first.ai_enabled
 			# A newborn takes the den of its first parent (GDD §7).
-			if newborn.will is HungerWill and first.will is HungerWill:
-				(newborn.will as HungerWill).den = (first.will as HungerWill).den
-			rat_count += 1
+			newborn.will.inherit_den(first.will)
+			count += 1
 
 
 ## Free cells (walkable, no living unit) of the 3×3 square around `center`; if none,

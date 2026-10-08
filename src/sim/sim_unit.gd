@@ -43,6 +43,8 @@ var reanimated: bool = false
 var integrity: int = 0
 ## Only rational units take orders (GDD §7).
 var rational: bool = false
+## Solid units never share a cell (GDD §6.3).
+var solid: bool = true
 ## Guard of the relic (GDD §7): home is the relic, no chasing, never flees.
 var guard: bool = false
 ## Raider whose path is fully blocked: this enemy is accepted as target (GDD §6.3).
@@ -72,6 +74,7 @@ func _init(p_id: int, p_data: UnitData, p_faction: Faction, p_position: Vector2,
 	chase_radius = p_data.chase_radius
 	rational = p_data.rational
 	integrity = p_data.integrity
+	solid = p_data.solid
 	will = SimWill.create(p_data.will)
 	for ability_name: StringName in p_data.abilities:
 		abilities.append(SimAbility.create(ability_name))

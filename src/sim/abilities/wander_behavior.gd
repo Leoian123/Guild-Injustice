@@ -18,6 +18,27 @@ var destination: Vector2 = Vector2.ZERO
 var direction: int = -1
 
 
+## Swarm damage (GDD §7): × the number of living swarm members of the same type and faction,
+## the attacker included, linked within SWARM_RADIUS in the snapshot. A rat's base damage is 1.
+func damage_multiplier(attacker: SimUnit, _target: SimUnit, snapshot: SimSnapshot, rules: RulesData) -> float:
+	var start := attacker.id - 1
+	var members: Array[int] = [start]
+	var seen: Dictionary = {start: true}
+	var index: int = 0
+	while index < members.size():
+		var current := snapshot.positions[members[index]]
+		for other: int in snapshot.size():
+			if seen.has(other) or not snapshot.alive[other]:
+				continue
+			if snapshot.factions[other] != attacker.faction or snapshot.types[other] != attacker.unit_type:
+				continue
+			if snapshot.positions[other].distance_to(current) <= rules.swarm_radius:
+				seen[other] = true
+				members.append(other)
+		index += 1
+	return float(members.size())
+
+
 func idle_destination(_world: World, _unit: SimUnit) -> Variant:
 	return destination if has_destination else null
 
@@ -56,7 +77,7 @@ static func _swarm_from(world: World, first: SimUnit, idle: Array[SimUnit], assi
 		for other: SimUnit in idle:
 			if assigned.has(other.id):
 				continue
-			if other.position.distance_to(current.position) <= world.rules.swarm_radius:
+			if other.unit_type == first.unit_type and other.position.distance_to(current.position) <= world.rules.swarm_radius:
 				assigned[other.id] = true
 				swarm.append(other)
 		index += 1
@@ -85,9 +106,10 @@ static func _vote_and_move(world: World, swarm: Array[SimUnit]) -> void:
 		var wander := _wander_of(unit)
 		wander.direction = winner
 		var destination := _clipped_point(world, unit.position, heading, world.rules.wander_radius)
-		# A sated rat stays near its den to breed (GDD §7): the leg is pulled back to the leash.
-		if unit.will is HungerWill and (unit.will as HungerWill).is_sated():
-			destination = _leashed(world, unit.position, destination, (unit.will as HungerWill).den)
+		# A sated rat or a prey stays near its den (GDD §7): the leg is pulled back to the leash.
+		var den: Variant = unit.will.leash_point()
+		if den != null:
+			destination = _leashed(world, unit.position, destination, den)
 		wander.destination = destination
 		wander.has_destination = true
 

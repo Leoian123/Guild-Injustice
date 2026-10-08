@@ -36,10 +36,10 @@ Leggi le sezioni del GDD che servono al compito corrente, non tutto il documento
 - Niente ECS, niente fisica di Godot per il combattimento, niente addon oltre a GdUnit4.
 
 ## Identificatori canonici
-Unità: `rat` `goblin` `archer` `thief` `paladin` · `servant` `undead` `revenant` `necromancer`.
+Unità: `rat` `rabbit` `goblin` `archer` `thief` `paladin` · `servant` `undead` `revenant` `necromancer`.
 Stati: `IDLE` `MOVE` `ATTACK` `FLEE` `DEAD`. Fazioni: `PLAYER` `ENEMY`. Gruppi: `blitz` `hunt`.
 Abilità: `WanderBehavior` `BreedAbility` `PackCourageAbility` `PointBlankPenalty` `BackstabAbility` `ArmorAbility` `ReanimateAbility` `FearlessTrait`.
-Volontà: `HoldGroundWill` `HungerWill` `NecroBoundWill`.
+Volontà: `HoldGroundWill` `HungerWill` `NecroBoundWill` `PreyWill`.
 Non inventare sinonimi.
 
 ## Decidere o chiedere

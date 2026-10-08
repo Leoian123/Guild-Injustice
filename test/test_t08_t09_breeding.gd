@@ -14,8 +14,9 @@ func test_T08_breeding() -> void:
 	assert_int(_player_rats(world)).is_equal(3)
 	TestWorlds.run_until(world, 199)
 	assert_int(_player_rats(world)).is_equal(3)
+	# The parents are hungry from tick 199 and the newborn alone makes no pair (rats breed sated).
 	TestWorlds.run_until(world, 200)
-	assert_int(_player_rats(world)).is_equal(6)
+	assert_int(_player_rats(world)).is_equal(3)
 
 
 func test_T09_rat_cap() -> void:
@@ -27,10 +28,10 @@ func test_T09_rat_cap() -> void:
 	TestWorlds.run_until(world, 100)
 	assert_int(_player_rats(world)).is_equal(21)
 	TestWorlds.run_until(world, 200)
-	assert_int(_player_rats(world)).is_equal(24)
+	assert_int(_player_rats(world)).is_equal(50)
 	while world.tick <= 1000 and not world.is_over():
 		world.step()
-		assert_int(_player_rats(world)).is_less_equal(24)
+		assert_int(_player_rats(world)).is_less_equal(50)
 
 
 func _player_rats(world: World) -> int:

@@ -50,14 +50,15 @@ func validation_error(scenario: ScenarioData, fog: SimFog, world: World) -> Stri
 	if cost(fog.rules) > scenario.budget:
 		return "cost %d over budget %d" % [cost(fog.rules), scenario.budget]
 	for entry: Dictionary in entries:
-		var error := _unit_error(scenario, fog, world, entry["type"], entry["cell"], entry["guard"])
+		var error := _unit_error(scenario, fog, world, entry["type"], entry["cell"], entry["guard"], true)
 		if not error.is_empty():
 			return error
 	return ""
 
 
+# `counting_self`: the unit is already among the entries (whole-plan validation).
 func _unit_error(scenario: ScenarioData, fog: SimFog, world: World, unit_type: StringName,
-		cell: Vector2i, guard: bool) -> String:
+		cell: Vector2i, guard: bool, counting_self: bool = false) -> String:
 	if not unit_type in scenario.player_units:
 		return "unit type '%s' is not available" % unit_type
 	if guard and not SimScenario.unit_data(unit_type).rational:
@@ -68,4 +69,14 @@ func _unit_error(scenario: ScenarioData, fog: SimFog, world: World, unit_type: S
 		return "cell %s is not visible" % cell
 	if world.is_enemy_cell(cell, SimUnit.Faction.PLAYER):
 		return "cell %s has an enemy" % cell
+	if world.rules.body_blocking and SimScenario.unit_data(unit_type).solid and _solid_entries_at(cell) > (0 if not counting_self else 1):
+		return "cell %s already has a unit" % cell
 	return ""
+
+
+func _solid_entries_at(cell: Vector2i) -> int:
+	var count: int = 0
+	for entry: Dictionary in entries:
+		if entry["cell"] == cell and SimScenario.unit_data(entry["type"]).solid:
+			count += 1
+	return count

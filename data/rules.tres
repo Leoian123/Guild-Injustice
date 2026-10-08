@@ -43,4 +43,6 @@ surround_count = 4
 surround_radius = 1.5
 reanimate_cooldown_ticks = 120
 reanimate_radius = 6.0
-rat_cap = 24
+rat_cap = 50
+rabbit_cap = 100
+body_blocking = true
